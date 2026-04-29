@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { fetchRecords, updateRecordStatus } from '../../api/records'
 import type { StoreRecord } from '../../types'
 
@@ -21,17 +21,17 @@ export default function RecordsPage() {
   const [statusFilter, setStatusFilter] = useState('pending')
   const [loading, setLoading] = useState(false)
 
-  const loadRecords = () => {
+  const loadRecords = useCallback(() => {
     setLoading(true)
     fetchRecords({ status: statusFilter })
       .then((res) => setRecords(res.data.results))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }
+  }, [statusFilter])
 
   useEffect(() => {
     loadRecords()
-  }, [statusFilter])
+  }, [loadRecords])
 
   const handleAction = async (
     id: number,
