@@ -67,6 +67,8 @@ export default function SignupPage() {
       const data = err?.response?.data
       if (data?.email) setFieldErrors((prev) => ({ ...prev, email: data.email[0] }))
       else if (data?.nickname) setFieldErrors((prev) => ({ ...prev, nickname: data.nickname[0] }))
+      else if (data?.password) setFieldErrors((prev) => ({ ...prev, password: data.password[0] }))
+      else if (data?.phone) setFieldErrors((prev) => ({ ...prev, phone: data.phone[0] }))
       else setServerError('회원가입에 실패했습니다. 다시 시도해주세요.')
     } finally {
       setLoading(false)
@@ -85,7 +87,7 @@ export default function SignupPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 w-full max-w-sm p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-normal text-gray-900">복북정운대사</h1>
+          <h1 className="text-2xl font-normal text-gray-900">복붙전권대사</h1>
           <p className="text-sm text-gray-500 mt-1">사장님 회원가입</p>
         </div>
 

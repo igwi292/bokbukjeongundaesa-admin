@@ -7,6 +7,7 @@ const STATUS_LABEL: Record<string, string> = {
   pending: '대기',
   approved: '승인',
   hidden: '숨김',
+  rejected: '거절',
   deleted: '삭제',
 }
 
@@ -14,16 +15,11 @@ const STATUS_COLOR: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
   approved: 'bg-green-100 text-green-700',
   hidden: 'bg-gray-100 text-gray-500',
+  rejected: 'bg-orange-100 text-orange-600',
   deleted: 'bg-red-100 text-red-500',
 }
 
-function RecordModal({
-  record,
-  onClose,
-}: {
-  record: StoreRecord
-  onClose: () => void
-}) {
+function RecordModal({ record, onClose }: { record: StoreRecord; onClose: () => void }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
@@ -37,7 +33,7 @@ function RecordModal({
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-gray-900">
-                {record.author_nickname ?? '익명'}
+                {record.visitor_name ?? '익명'}
               </p>
               <p className="text-xs text-gray-400 mt-0.5">
                 {new Date(record.created_at).toLocaleDateString('ko-KR', {
@@ -47,22 +43,13 @@ function RecordModal({
                 })}
               </p>
             </div>
-            <span
-              className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_COLOR[record.status] ?? ''}`}
-            >
+            <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_COLOR[record.status] ?? ''}`}>
               {STATUS_LABEL[record.status] ?? record.status}
             </span>
           </div>
         </div>
 
         <div className="px-6 py-5">
-          {record.image_url && (
-            <img
-              src={record.image_url}
-              alt="기록 이미지"
-              className="w-full h-48 object-cover rounded-xl mb-4"
-            />
-          )}
           <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
             {record.content}
           </p>
@@ -81,13 +68,7 @@ function RecordModal({
   )
 }
 
-function RecordCard({
-  record,
-  onClick,
-}: {
-  record: StoreRecord
-  onClick: () => void
-}) {
+function RecordCard({ record, onClick }: { record: StoreRecord; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -95,11 +76,9 @@ function RecordCard({
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <p className="text-sm font-semibold text-gray-900 truncate">
-          {record.author_nickname ?? '익명'}
+          {record.visitor_name ?? '익명'}
         </p>
-        <span
-          className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLOR[record.status] ?? ''}`}
-        >
+        <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLOR[record.status] ?? ''}`}>
           {STATUS_LABEL[record.status] ?? record.status}
         </span>
       </div>
@@ -107,16 +86,6 @@ function RecordCard({
       <p className="text-sm text-gray-600 leading-relaxed line-clamp-3 mb-4">
         {record.content}
       </p>
-
-      {record.image_url && (
-        <div className="mb-4 h-32 rounded-xl overflow-hidden bg-gray-100">
-          <img
-            src={record.image_url}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-        </div>
-      )}
 
       <p className="text-xs text-gray-400">
         {new Date(record.created_at).toLocaleDateString('ko-KR')}
@@ -128,25 +97,27 @@ function RecordCard({
 export default function MyRecordsPage() {
   const [records, setRecords] = useState<StoreRecord[]>([])
   const [loading, setLoading] = useState(false)
-  const [storeId, setStoreId] = useState<number | null>(null)
+  const [fetchError, setFetchError] = useState(false)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [selected, setSelected] = useState<StoreRecord | null>(null)
 
-  useEffect(() => {
-    fetchMyStore()
-      .then((res) => setStoreId(res.data.id))
-      .catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    if (!storeId) return
+  const load = () => {
     setLoading(true)
-    fetchRecords({ store_id: storeId })
-      .then((res) => setRecords(res.data.results))
-      .catch(() => {})
+    setFetchError(false)
+    fetchMyStore()
+      .then((res) => {
+        if (!res.data) { setLoading(false); return }
+        return fetchRecords()
+      })
+      .then((res) => {
+        if (res) setRecords(res.data.results)
+      })
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false))
-  }, [storeId])
+  }
+
+  useEffect(() => { load() }, [])
 
   const filtered = records.filter((r) => {
     const date = new Date(r.created_at)
@@ -155,10 +126,7 @@ export default function MyRecordsPage() {
     return true
   })
 
-  const handleReset = () => {
-    setFrom('')
-    setTo('')
-  }
+  const handleReset = () => { setFrom(''); setTo('') }
 
   return (
     <>
@@ -166,7 +134,6 @@ export default function MyRecordsPage() {
         <div className="flex items-start justify-between mb-6 gap-4">
           <h2 className="text-xl font-bold text-gray-900 shrink-0">우리 매장 기록</h2>
 
-          {/* 날짜 필터 */}
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2">
               <span className="text-xs text-gray-400 shrink-0">시작</span>
@@ -188,35 +155,31 @@ export default function MyRecordsPage() {
               />
             </div>
             {(from || to) && (
-              <button
-                onClick={handleReset}
-                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-              >
+              <button onClick={handleReset} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
                 초기화
               </button>
             )}
           </div>
         </div>
 
-        {/* 결과 수 */}
         {!loading && (
-          <p className="text-xs text-gray-400 mb-4">
-            총 {filtered.length.toLocaleString()}개의 기록
-          </p>
+          <p className="text-xs text-gray-400 mb-4">총 {filtered.length.toLocaleString()}개의 기록</p>
         )}
 
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <p className="text-sm text-gray-400">불러오는 중...</p>
           </div>
+        ) : fetchError ? (
+          <div className="flex flex-col items-center justify-center h-48 gap-3">
+            <p className="text-sm text-red-500">기록을 불러오지 못했습니다.</p>
+            <button onClick={load} className="text-sm text-indigo-600 hover:underline">다시 시도</button>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-gray-400">
             <p className="text-sm">기록이 없습니다.</p>
             {(from || to) && (
-              <button
-                onClick={handleReset}
-                className="mt-2 text-xs text-indigo-500 hover:underline"
-              >
+              <button onClick={handleReset} className="mt-2 text-xs text-indigo-500 hover:underline">
                 필터 초기화
               </button>
             )}
@@ -224,19 +187,13 @@ export default function MyRecordsPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((record) => (
-              <RecordCard
-                key={record.id}
-                record={record}
-                onClick={() => setSelected(record)}
-              />
+              <RecordCard key={record.uuid} record={record} onClick={() => setSelected(record)} />
             ))}
           </div>
         )}
       </div>
 
-      {selected && (
-        <RecordModal record={selected} onClose={() => setSelected(null)} />
-      )}
+      {selected && <RecordModal record={selected} onClose={() => setSelected(null)} />}
     </>
   )
 }

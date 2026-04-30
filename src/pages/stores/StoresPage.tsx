@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { fetchMyStore, updateStore } from '../../api/stores'
+import { fetchMyStore, updateStore, createStore } from '../../api/stores'
 import type { Store } from '../../types'
 
-type EditableDraft = Pick<Store, 'name' | 'location' | 'hours'>
+type EditableDraft = Pick<Store, 'name' | 'location' | 'description'>
 
 interface Field {
   key: keyof EditableDraft
@@ -13,7 +13,7 @@ interface Field {
 const FIELDS: Field[] = [
   { key: 'name', label: '매장명', placeholder: '매장 이름을 입력하세요' },
   { key: 'location', label: '위치', placeholder: '주소를 입력하세요' },
-  { key: 'hours', label: '영업시간', placeholder: '예) 09:00 - 22:00' },
+  { key: 'description', label: '매장 소개', placeholder: '매장 소개를 입력하세요' },
 ]
 
 function QrCard({ qrUrl, storeName }: { qrUrl: string; storeName: string }) {
@@ -55,67 +55,132 @@ function QrCard({ qrUrl, storeName }: { qrUrl: string; storeName: string }) {
   )
 }
 
-const PLAN_LABEL: Record<Store['plan'], string> = {
-  basic: 'Basic',
-  pro: 'Pro',
-  enterprise: 'Enterprise',
-}
-
-const PLAN_COLOR: Record<Store['plan'], string> = {
-  basic: 'bg-gray-100 text-gray-600',
-  pro: 'bg-indigo-100 text-indigo-700',
-  enterprise: 'bg-purple-100 text-purple-700',
-}
-
-export default function StoresPage() {
-  const [store, setStore] = useState<Store | null>(null)
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState<EditableDraft>({ name: '', location: '', hours: '' })
+function CreateStoreForm({ onCreated }: { onCreated: (store: Store) => void }) {
+  const [draft, setDraft] = useState({ name: '', location: '', description: '', business_number: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const firstInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    fetchMyStore()
-      .then((res) => {
-        setStore(res.data)
-        setDraft({ name: res.data.name, location: res.data.location, hours: res.data.hours })
-      })
-      .catch(() => {})
-  }, [])
-
-  const handleEdit = () => {
-    if (!store) return
-    setDraft({ name: store.name, location: store.location, hours: store.hours })
-    setError('')
-    setEditing(true)
-    setTimeout(() => firstInputRef.current?.focus(), 0)
-  }
-
-  const handleCancel = () => {
-    setEditing(false)
-    setError('')
-  }
-
-  const handleSave = async () => {
-    if (!store) return
+  const handleSubmit = async () => {
+    if (!draft.name.trim()) { setError('매장명을 입력해주세요.'); return }
     setSaving(true)
     setError('')
     try {
-      const res = await updateStore(store.id, draft)
-      setStore(res.data)
-      setEditing(false)
+      const res = await createStore(draft)
+      onCreated(res.data)
     } catch {
-      setError('저장에 실패했습니다. 다시 시도해주세요.')
+      setError('매장 등록에 실패했습니다.')
     } finally {
       setSaving(false)
     }
   }
 
-  if (!store) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-lg">
+      <p className="text-sm font-medium text-gray-700 mb-4">아직 등록된 매장이 없습니다. 첫 매장을 등록해보세요.</p>
+      <div className="space-y-3">
+        {[
+          { key: 'name', label: '매장명', placeholder: '매장 이름' },
+          { key: 'location', label: '위치', placeholder: '주소' },
+          { key: 'business_number', label: '사업자번호', placeholder: '000-00-00000' },
+          { key: 'description', label: '매장 소개', placeholder: '매장 소개 (선택)' },
+        ].map(({ key, label, placeholder }) => (
+          <div key={key}>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+            <input
+              type="text"
+              value={draft[key as keyof typeof draft]}
+              placeholder={placeholder}
+              onChange={(e) => setDraft((prev) => ({ ...prev, [key]: e.target.value }))}
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        ))}
+      </div>
+      {error && <p className="text-xs text-red-500 mt-3">{error}</p>}
+      <button
+        onClick={handleSubmit}
+        disabled={saving}
+        className="mt-4 w-full bg-indigo-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+      >
+        {saving ? '등록 중...' : '매장 등록하기'}
+      </button>
+    </div>
+  )
+}
+
+export default function StoresPage() {
+  const [store, setStore] = useState<Store | null | undefined>(undefined)
+  const [fetchError, setFetchError] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState<EditableDraft>({ name: '', location: '', description: '' })
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const firstInputRef = useRef<HTMLInputElement>(null)
+
+  const load = () => {
+    setFetchError(false)
+    fetchMyStore()
+      .then((res) => {
+        setStore(res.data)
+        if (res.data) {
+          setDraft({ name: res.data.name, location: res.data.location, description: res.data.description })
+        }
+      })
+      .catch(() => setFetchError(true))
+  }
+
+  useEffect(() => { load() }, [])
+
+  const handleEdit = () => {
+    if (!store) return
+    setDraft({ name: store.name, location: store.location, description: store.description })
+    setSaveError('')
+    setEditing(true)
+    setTimeout(() => firstInputRef.current?.focus(), 0)
+  }
+
+  const handleCancel = () => { setEditing(false); setSaveError('') }
+
+  const handleSave = async () => {
+    if (!store) return
+    setSaving(true)
+    setSaveError('')
+    try {
+      const res = await updateStore(store.uuid, draft)
+      setStore(res.data)
+      setEditing(false)
+    } catch {
+      setSaveError('저장에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (fetchError) {
+    return (
+      <div className="max-w-lg">
+        <h2 className="text-xl font-bold text-gray-900 mb-8">내 매장</h2>
+        <div className="flex flex-col items-center justify-center h-48 gap-3">
+          <p className="text-sm text-red-500">매장 정보를 불러오지 못했습니다.</p>
+          <button onClick={load} className="text-sm text-indigo-600 hover:underline">다시 시도</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (store === undefined) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-sm text-gray-400">불러오는 중...</p>
+      </div>
+    )
+  }
+
+  if (store === null) {
+    return (
+      <div className="max-w-lg">
+        <h2 className="text-xl font-bold text-gray-900 mb-8">내 매장</h2>
+        <CreateStoreForm onCreated={(s) => setStore(s)} />
       </div>
     )
   }
@@ -138,9 +203,7 @@ export default function StoresPage() {
                 type="text"
                 value={draft[key]}
                 placeholder={placeholder}
-                onChange={(e) =>
-                  setDraft((prev) => ({ ...prev, [key]: e.target.value }))
-                }
+                onChange={(e) => setDraft((prev) => ({ ...prev, [key]: e.target.value }))}
                 className="w-full text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
               />
             ) : (
@@ -151,9 +214,9 @@ export default function StoresPage() {
           </div>
         ))}
 
-        {error && (
+        {saveError && (
           <div className="px-6 py-3 bg-red-50 border-t border-red-100">
-            <p className="text-xs text-red-500">{error}</p>
+            <p className="text-xs text-red-500">{saveError}</p>
           </div>
         )}
 
@@ -189,14 +252,14 @@ export default function StoresPage() {
       {/* 읽기 전용 메타 정보 */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
         <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-          <p className="text-xs font-medium text-gray-400">플랜</p>
-          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${PLAN_COLOR[store.plan]}`}>
-            {PLAN_LABEL[store.plan]}
-          </span>
+          <p className="text-xs font-medium text-gray-400">사업자번호</p>
+          <p className="text-sm text-gray-700">{store.business_number || '미입력'}</p>
         </div>
         <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-          <p className="text-xs font-medium text-gray-400">누적 기록</p>
-          <p className="text-sm font-semibold text-gray-900">{store.record_count.toLocaleString()}개</p>
+          <p className="text-xs font-medium text-gray-400">상태</p>
+          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${store.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+            {store.is_active ? '운영 중' : '비활성'}
+          </span>
         </div>
         <div className="px-6 py-5 flex items-center justify-between">
           <p className="text-xs font-medium text-gray-400">등록일</p>

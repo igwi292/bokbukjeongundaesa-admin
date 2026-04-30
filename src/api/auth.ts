@@ -18,13 +18,13 @@ const base = axios.create({
 })
 
 export const login = (email: string, password: string) =>
-  base.post<TokenPair>('/auth/token/', { email, password })
+  base.post<TokenPair>('/accounts/login/', { email, password })
 
 export const refreshAccessToken = (refresh: string) =>
-  base.post<{ access: string }>('/auth/token/refresh/', { refresh })
+  base.post<{ access: string }>('/accounts/token/refresh/', { refresh })
 
 export const signup = (payload: SignupPayload) =>
-  base.post('/auth/register/', payload)
+  base.post('/accounts/register/', payload)
 
 export const saveTokens = (pair: TokenPair) => {
   localStorage.setItem('access_token', pair.access)

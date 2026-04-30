@@ -1,24 +1,25 @@
 export interface Store {
-  id: number
+  uuid: string
   name: string
+  slug: string
+  business_number: string
+  description: string
   location: string
-  hours: string
-  owner: string
-  plan: 'basic' | 'pro' | 'enterprise'
-  status: 'active' | 'inactive'
-  created_at: string
+  is_active: boolean
   qr_url: string
-  record_count: number
+  created_at: string
+  updated_at: string
 }
 
 export interface StoreRecord {
-  id: number
-  store_id: number
+  uuid: string
+  store: number
+  store_uuid: string
   store_name: string
   content: string
-  image_url?: string
-  author_nickname?: string
-  status: 'pending' | 'approved' | 'hidden' | 'deleted'
+  visitor_name: string | null
+  status: 'pending' | 'approved' | 'rejected' | 'hidden' | 'deleted'
+  is_deleted: boolean
   created_at: string
 }
 
@@ -38,9 +39,16 @@ export interface PaginatedResponse<T> {
   results: T[]
 }
 
+export interface OwnerProfile {
+  business_name: string
+  business_registration_number: string
+}
+
 export interface UserProfile {
-  id: number
-  username: string
+  uuid: string
   email: string
+  nickname: string
   phone: string
+  user_type: string
+  owner_profile: OwnerProfile | null
 }

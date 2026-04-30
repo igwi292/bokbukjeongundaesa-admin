@@ -34,7 +34,7 @@ client.interceptors.response.use(
     if (!refresh) {
       clearTokens()
       window.location.href = '/login'
-      return Promise.reject(err)
+      return new Promise(() => {})
     }
 
     if (isRefreshing) {
@@ -63,7 +63,7 @@ client.interceptors.response.use(
       flushQueue(null, refreshErr)
       clearTokens()
       window.location.href = '/login'
-      return Promise.reject(refreshErr)
+      return new Promise(() => {})
     } finally {
       isRefreshing = false
     }

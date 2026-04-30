@@ -28,7 +28,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 w-full max-w-sm p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-normal text-gray-900">복북정운대사</h1>
+          <h1 className="text-2xl font-normal text-gray-900">복붙전권대사</h1>
           <p className="text-sm text-gray-500 mt-1">사장님 로그인</p>
         </div>
 
@@ -73,6 +73,7 @@ export default function LoginPage() {
             회원가입
           </Link>
         </p>
+
       </div>
     </div>
   )

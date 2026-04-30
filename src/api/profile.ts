@@ -1,17 +1,11 @@
 import client from './client'
-import type { UserProfile } from '../types'
-
-let MOCK_PROFILE: UserProfile = {
-  id: 1,
-  username: 'taehee',
-  email: 'kimtaehee1030@gmail.com',
-  phone: '010-1234-5678',
-}
+import type { UserProfile, OwnerProfile } from '../types'
 
 export const fetchProfile = () =>
-  Promise.resolve({ data: MOCK_PROFILE }) as ReturnType<typeof client.get<UserProfile>>
+  client.get<UserProfile>('/accounts/me/')
 
-export const updateProfile = (data: Partial<Pick<UserProfile, 'email' | 'phone'>>) => {
-  MOCK_PROFILE = { ...MOCK_PROFILE, ...data }
-  return Promise.resolve({ data: MOCK_PROFILE }) as ReturnType<typeof client.patch<UserProfile>>
-}
+export const updateProfile = (data: Partial<Pick<UserProfile, 'email' | 'phone'>>) =>
+  client.patch<UserProfile>('/accounts/me/', data)
+
+export const updateOwnerProfile = (data: Partial<OwnerProfile>) =>
+  client.patch<OwnerProfile>('/accounts/me/profile/', data)
