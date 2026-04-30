@@ -2,6 +2,7 @@ export interface Store {
   id: number
   name: string
   location: string
+  hours: string
   owner: string
   plan: 'basic' | 'pro' | 'enterprise'
   status: 'active' | 'inactive'
@@ -35,4 +36,11 @@ export interface PaginatedResponse<T> {
   next: string | null
   previous: string | null
   results: T[]
+}
+
+export interface UserProfile {
+  id: number
+  username: string
+  email: string
+  phone: string
 }
