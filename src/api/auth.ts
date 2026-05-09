@@ -22,5 +22,8 @@ export const refreshToken = () =>
 export const logout = () =>
   base.post('/v1/owner/auth/logout')
 
+export const logoutAll = () =>
+  base.post('/v1/owner/auth/logout-all')
+
 export const signup = (payload: SignupPayload) =>
   base.post('/accounts/register/', payload)
