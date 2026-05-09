@@ -50,7 +50,6 @@ client.interceptors.response.use(
     try {
       const { data } = await refreshToken()
       setToken(data.access)
-      client.defaults.headers.common.Authorization = `Bearer ${data.access}`
       flushQueue(data.access)
       original.headers.Authorization = `Bearer ${data.access}`
       return client(original)

@@ -20,7 +20,7 @@ export const refreshToken = () =>
   base.post<{ access: string }>('/v1/owner/auth/refresh')
 
 export const logout = () =>
-  base.post('/v1/owner/auth/logout/')
+  base.post('/v1/owner/auth/logout')
 
 export const signup = (payload: SignupPayload) =>
   base.post('/accounts/register/', payload)
