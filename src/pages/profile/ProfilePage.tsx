@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { fetchProfile, updateProfile, updateOwnerProfile } from '../../api/profile'
+import { changePassword } from '../../api/account'
 import type { UserProfile, OwnerProfile } from '../../types'
 
 export default function ProfilePage() {
@@ -12,6 +13,12 @@ export default function ProfilePage() {
   const [savingBasic, setSavingBasic] = useState(false)
   const [basicError, setBasicError] = useState('')
   const emailRef = useRef<HTMLInputElement>(null)
+
+  // 비밀번호 변경
+  const [pwDraft, setPwDraft] = useState({ current: '', next: '', confirm: '' })
+  const [changingPw, setChangingPw] = useState(false)
+  const [pwSuccess, setPwSuccess] = useState(false)
+  const [pwError, setPwError] = useState('')
 
   // 사업자 정보 편집
   const [editingBiz, setEditingBiz] = useState(false)
@@ -80,6 +87,26 @@ export default function ProfilePage() {
       setBizError('저장에 실패했습니다. 다시 시도해주세요.')
     } finally {
       setSavingBiz(false)
+    }
+  }
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (pwDraft.next !== pwDraft.confirm) {
+      setPwError('새 비밀번호가 일치하지 않습니다.')
+      return
+    }
+    setPwError('')
+    setPwSuccess(false)
+    setChangingPw(true)
+    try {
+      await changePassword(pwDraft.current, pwDraft.next)
+      setPwDraft({ current: '', next: '', confirm: '' })
+      setPwSuccess(true)
+    } catch {
+      setPwError('비밀번호 변경에 실패했습니다. 현재 비밀번호를 확인해주세요.')
+    } finally {
+      setChangingPw(false)
     }
   }
 
@@ -210,6 +237,54 @@ export default function ProfilePage() {
             </button>
           )}
         </div>
+      </div>
+      {/* 비밀번호 변경 */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">비밀번호 변경</p>
+        </div>
+
+        <form onSubmit={handleChangePassword}>
+          {[
+            { key: 'current' as const, label: '현재 비밀번호', autoComplete: 'current-password' },
+            { key: 'next' as const, label: '새 비밀번호', autoComplete: 'new-password' },
+            { key: 'confirm' as const, label: '새 비밀번호 확인', autoComplete: 'new-password' },
+          ].map(({ key, label, autoComplete }, idx, arr) => (
+            <div key={key} className={`px-6 py-5 ${idx < arr.length - 1 ? 'border-b border-gray-100' : ''}`}>
+              <p className="text-xs font-medium text-gray-400 mb-1">{label}</p>
+              <input
+                type="password"
+                value={pwDraft[key]}
+                onChange={(e) => setPwDraft((prev) => ({ ...prev, [key]: e.target.value }))}
+                className="w-full text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                autoComplete={autoComplete}
+                required
+                minLength={key !== 'current' ? 8 : undefined}
+              />
+            </div>
+          ))}
+
+          {pwError && (
+            <div className="px-6 py-3 bg-red-50 border-t border-red-100">
+              <p className="text-xs text-red-500">{pwError}</p>
+            </div>
+          )}
+          {pwSuccess && (
+            <div className="px-6 py-3 bg-green-50 border-t border-green-100">
+              <p className="text-xs text-green-600">비밀번호가 성공적으로 변경되었습니다.</p>
+            </div>
+          )}
+
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+            <button
+              type="submit"
+              disabled={changingPw}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {changingPw ? '변경 중...' : '비밀번호 변경'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
