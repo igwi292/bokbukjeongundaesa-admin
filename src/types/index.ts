@@ -19,6 +19,7 @@ export interface StoreRecord {
   content: string
   visitor_name: string | null
   status: 'pending' | 'approved' | 'rejected' | 'hidden' | 'deleted'
+  report_count?: number
   is_deleted: boolean
   created_at: string
 }

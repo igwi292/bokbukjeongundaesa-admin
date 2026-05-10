@@ -18,6 +18,8 @@ const STATUS_COLOR: Record<string, string> = {
   deleted: 'bg-red-100 text-red-600',
 }
 
+const getReportCount = (record: StoreRecord) => record.report_count ?? 0
+
 export default function RecordsPage() {
   const [records, setRecords] = useState<StoreRecord[]>([])
   const [statusFilter, setStatusFilter] = useState('pending')
@@ -34,7 +36,7 @@ export default function RecordsPage() {
       .finally(() => setLoading(false))
   }, [statusFilter])
 
-  useEffect(() => { loadRecords() }, [loadRecords])
+  useEffect(() => { queueMicrotask(loadRecords) }, [loadRecords])
 
   const handleAction = async (
     uuid: string,
@@ -93,6 +95,7 @@ export default function RecordsPage() {
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">매장</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">내용</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">방문자</th>
+                <th className="text-left px-4 py-3 text-gray-500 font-medium">신고</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">상태</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">날짜</th>
                 <th className="px-4 py-3" />
@@ -104,6 +107,15 @@ export default function RecordsPage() {
                   <td className="px-4 py-3 font-medium text-gray-900">{rec.store_name}</td>
                   <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{rec.content}</td>
                   <td className="px-4 py-3 text-gray-500">{rec.visitor_name ?? '익명'}</td>
+                  <td className="px-4 py-3">
+                    {getReportCount(rec) > 0 ? (
+                      <span className="inline-flex items-center rounded bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">
+                        {getReportCount(rec).toLocaleString()}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-300">0</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[rec.status] ?? ''}`}>
                       {STATUS_LABEL[rec.status] ?? rec.status}

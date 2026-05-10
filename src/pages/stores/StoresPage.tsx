@@ -129,7 +129,7 @@ export default function StoresPage() {
       .catch(() => setFetchError(true))
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { queueMicrotask(load) }, [])
 
   const handleEdit = () => {
     if (!store) return

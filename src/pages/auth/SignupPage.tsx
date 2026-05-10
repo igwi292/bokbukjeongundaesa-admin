@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { isAxiosError } from 'axios'
 import { Link, useNavigate } from 'react-router-dom'
 import { signup } from '../../api/auth'
 
@@ -63,8 +64,8 @@ export default function SignupPage() {
         password: form.password,
       })
       navigate('/login')
-    } catch (err: any) {
-      const data = err?.response?.data
+    } catch (err: unknown) {
+      const data = isAxiosError<Record<string, string[]>>(err) ? err.response?.data : undefined
       if (data?.email) setFieldErrors((prev) => ({ ...prev, email: data.email[0] }))
       else if (data?.nickname) setFieldErrors((prev) => ({ ...prev, nickname: data.nickname[0] }))
       else if (data?.password) setFieldErrors((prev) => ({ ...prev, password: data.password[0] }))
