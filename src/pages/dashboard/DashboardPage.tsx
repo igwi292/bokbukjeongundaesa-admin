@@ -21,7 +21,7 @@ export default function DashboardPage() {
       .catch(() => setError(true))
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { queueMicrotask(load) }, [])
 
   if (error) {
     return (

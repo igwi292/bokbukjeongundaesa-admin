@@ -5,6 +5,8 @@ export interface SignupPayload {
   nickname: string
   phone: string
   password: string
+  agreed_to_terms: boolean
+  agreed_to_privacy: boolean
 }
 
 const base = axios.create({
@@ -17,25 +19,25 @@ export const login = (email: string, password: string) =>
   base.post<{ access: string }>('/v1/owner/auth/login/', { email, password })
 
 export const refreshToken = () =>
-  base.post<{ access: string }>('/v1/owner/auth/refresh')
+  base.post<{ access: string }>('/v1/owner/auth/refresh/')
 
 export const logout = () =>
-  base.post('/v1/owner/auth/logout')
+  base.post('/v1/owner/auth/logout/')
 
 export const logoutAll = () =>
-  base.post('/v1/owner/auth/logout-all')
+  base.post('/v1/owner/auth/logout-all/')
 
 export const signup = (payload: SignupPayload) =>
   base.post('/v1/owner/auth/register/', payload)
 
 export const requestPasswordReset = (email: string) =>
-  base.post('/v1/owner/auth/password/reset/request', { email })
+  base.post('/v1/owner/auth/password/reset/request/', { email })
 
 export const confirmPasswordReset = (token: string, password: string) =>
-  base.post('/v1/owner/auth/password/reset/confirm', { token, password })
+  base.post('/v1/owner/auth/password/reset/confirm/', { token, new_password: password })
 
 export const verifyEmail = (token: string) =>
-  base.post('/v1/owner/auth/email/verify', { token })
+  base.post('/v1/owner/auth/verify-email/confirm/', { token })
 
 export const resendVerificationEmail = (email: string) =>
-  base.post('/v1/owner/auth/email/resend', { email })
+  base.post('/v1/owner/auth/verify-email/request/', { email })

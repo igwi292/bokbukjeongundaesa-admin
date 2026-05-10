@@ -52,7 +52,7 @@ export default function ProfilePage() {
       .catch(() => setFetchError(true))
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { queueMicrotask(load) }, [])
 
   const handleEditBasic = () => {
     if (!profile) return

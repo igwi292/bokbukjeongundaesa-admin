@@ -117,7 +117,7 @@ export default function MyRecordsPage() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { queueMicrotask(load) }, [])
 
   const filtered = records.filter((r) => {
     const date = new Date(r.created_at)
