@@ -26,7 +26,7 @@ export const logoutAll = () =>
   base.post('/v1/owner/auth/logout-all')
 
 export const signup = (payload: SignupPayload) =>
-  base.post('/accounts/register/', payload)
+  base.post('/v1/owner/auth/register/', payload)
 
 export const requestPasswordReset = (email: string) =>
   base.post('/v1/owner/auth/password/reset/request', { email })
