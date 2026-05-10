@@ -16,32 +16,78 @@ const FIELDS: Field[] = [
   { key: 'description', label: '매장 소개', placeholder: '매장 소개를 입력하세요' },
 ]
 
-function QrCard({ qrUrl, storeName }: { qrUrl: string; storeName: string }) {
+async function copyText(value: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value)
+    return
+  }
+
+  const textarea = document.createElement('textarea')
+  textarea.value = value
+  textarea.style.position = 'fixed'
+  textarea.style.opacity = '0'
+  document.body.appendChild(textarea)
+  textarea.focus()
+  textarea.select()
+  const copied = document.execCommand('copy')
+  document.body.removeChild(textarea)
+  if (!copied) throw new Error('copy failed')
+}
+
+function QrCard({ store }: { store: Store }) {
+  const [copyFeedback, setCopyFeedback] = useState('')
+  const scanCount = store.qr_scan_count ?? 0
+  const lastScannedAt = store.qr_last_scanned_at
+    ? new Date(store.qr_last_scanned_at).toLocaleString('ko-KR')
+    : '아직 없음'
+
   const handleDownload = () => {
     const a = document.createElement('a')
-    a.href = qrUrl
-    a.download = `${storeName}-qr.png`
+    a.href = store.qr_url
+    a.download = `${store.name}-qr.png`
     a.click()
+  }
+
+  const handleCopy = async (label: string, value?: string) => {
+    if (!value) return
+    try {
+      await copyText(value)
+      setCopyFeedback(`${label} 복사됨`)
+    } catch {
+      setCopyFeedback('복사에 실패했습니다')
+    } finally {
+      window.setTimeout(() => setCopyFeedback(''), 1800)
+    }
   }
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-6 pt-6 pb-2">
         <p className="text-xs font-medium text-gray-400 mb-1">매장 QR 코드</p>
-        <p className="text-xs text-gray-400">손님이 이 QR로 접속하면 매장 기록 화면으로 연결됩니다.</p>
+        <p className="text-xs text-gray-400">손님이 이 QR로 접속하면 방문 기록이 집계됩니다.</p>
       </div>
       <div className="flex flex-col items-center px-6 py-6 gap-4">
         <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-          <img src={qrUrl} alt="매장 QR 코드" className="w-40 h-40 object-contain" />
+          <img src={store.qr_url} alt="매장 QR 코드" className="w-40 h-40 object-contain" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 w-full">
+          <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
+            <p className="text-[11px] font-medium text-gray-400 mb-1">스캔 수</p>
+            <p className="text-lg font-bold text-gray-900">{scanCount.toLocaleString('ko-KR')}</p>
+          </div>
+          <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
+            <p className="text-[11px] font-medium text-gray-400 mb-1">마지막 스캔</p>
+            <p className="text-sm font-semibold text-gray-700 truncate" title={lastScannedAt}>{lastScannedAt}</p>
+          </div>
         </div>
         <div className="flex gap-2 w-full">
           <a
-            href={qrUrl}
+            href={store.public_url || store.qr_redirect_url || store.qr_url}
             target="_blank"
             rel="noreferrer"
             className="flex-1 text-center py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
           >
-            미리보기
+            방문자 화면
           </a>
           <button
             onClick={handleDownload}
@@ -49,6 +95,35 @@ function QrCard({ qrUrl, storeName }: { qrUrl: string; storeName: string }) {
           >
             다운로드
           </button>
+        </div>
+        <div className="w-full space-y-2">
+          {store.public_url && (
+            <div className="flex items-center gap-2">
+              <p className="min-w-0 flex-1 truncate rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500" title={store.public_url}>
+                {store.public_url}
+              </p>
+              <button
+                onClick={() => handleCopy('방문자 링크', store.public_url)}
+                className="shrink-0 px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                링크 복사
+              </button>
+            </div>
+          )}
+          {store.qr_redirect_url && (
+            <div className="flex items-center gap-2">
+              <p className="min-w-0 flex-1 truncate rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500" title={store.qr_redirect_url}>
+                {store.qr_redirect_url}
+              </p>
+              <button
+                onClick={() => handleCopy('동적 QR 링크', store.qr_redirect_url)}
+                className="shrink-0 px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                QR 링크 복사
+              </button>
+            </div>
+          )}
+          {copyFeedback && <p className="text-xs text-indigo-600">{copyFeedback}</p>}
         </div>
       </div>
     </div>
@@ -270,7 +345,7 @@ export default function StoresPage() {
       </div>
 
       {/* QR 코드 */}
-      {store.qr_url && <QrCard qrUrl={store.qr_url} storeName={store.name} />}
+      {store.qr_url && <QrCard store={store} />}
     </div>
   )
 }

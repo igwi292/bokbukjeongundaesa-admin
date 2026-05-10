@@ -6,7 +6,11 @@ export interface Store {
   description: string
   location: string
   is_active: boolean
+  public_url?: string
+  qr_redirect_url?: string
   qr_url: string
+  qr_scan_count?: number
+  qr_last_scanned_at?: string | null
   created_at: string
   updated_at: string
 }
