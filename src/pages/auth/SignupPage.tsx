@@ -62,7 +62,7 @@ export default function SignupPage() {
         phone: form.phone,
         password: form.password,
       })
-      navigate('/login')
+      navigate('/email-verify-sent', { state: { email: form.email } })
     } catch (err: any) {
       const data = err?.response?.data
       if (data?.email) setFieldErrors((prev) => ({ ...prev, email: data.email[0] }))
@@ -132,6 +132,7 @@ export default function SignupPage() {
             로그인
           </Link>
         </p>
+
       </div>
     </div>
   )

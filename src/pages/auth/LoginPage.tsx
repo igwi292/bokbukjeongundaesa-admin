@@ -75,7 +75,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-gray-400 mt-6">
           아직 계정이 없으신가요?{' '}
-          <Link to="/signup" className="text-indigo-600 font-medium hover:underline">
+          <Link to="/register" className="text-indigo-600 font-medium hover:underline">
             회원가입
           </Link>
         </p>

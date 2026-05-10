@@ -33,3 +33,9 @@ export const requestPasswordReset = (email: string) =>
 
 export const confirmPasswordReset = (token: string, password: string) =>
   base.post('/v1/owner/auth/password/reset/confirm', { token, password })
+
+export const verifyEmail = (token: string) =>
+  base.post('/v1/owner/auth/email/verify', { token })
+
+export const resendVerificationEmail = (email: string) =>
+  base.post('/v1/owner/auth/email/resend', { email })
