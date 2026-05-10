@@ -6,6 +6,7 @@ export interface Store {
   description: string
   location: string
   is_active: boolean
+  require_approval?: boolean
   public_url?: string
   qr_redirect_url?: string
   qr_url: string
