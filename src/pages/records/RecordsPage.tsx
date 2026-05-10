@@ -34,7 +34,7 @@ export default function RecordsPage() {
       .finally(() => setLoading(false))
   }, [statusFilter])
 
-  useEffect(() => { loadRecords() }, [loadRecords])
+  useEffect(() => { queueMicrotask(loadRecords) }, [loadRecords])
 
   const handleAction = async (
     uuid: string,

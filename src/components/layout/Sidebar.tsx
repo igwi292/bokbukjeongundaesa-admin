@@ -1,5 +1,5 @@
-import { NavLink } from 'react-router-dom'
-import { clearTokens } from '../../api/auth'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 
 const navItems = [
   { to: '/', label: '대시보드', icon: '📊' },
@@ -9,6 +9,19 @@ const navItems = [
 ]
 
 export default function Sidebar() {
+  const { logout, logoutAll } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login', { replace: true })
+  }
+
+  const handleLogoutAll = async () => {
+    await logoutAll()
+    navigate('/login', { replace: true })
+  }
+
   return (
     <aside className="w-60 bg-white border-r border-gray-200 min-h-screen flex flex-col">
       <div className="px-6 py-5 border-b border-gray-200">
@@ -49,14 +62,18 @@ export default function Sidebar() {
           프로필
         </NavLink>
         <button
-          onClick={() => {
-            clearTokens()
-            window.location.href = '/login'
-          }}
+          onClick={handleLogout}
           className="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
         >
           <span>🚪</span>
           로그아웃
+        </button>
+        <button
+          onClick={handleLogoutAll}
+          className="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+        >
+          <span>🔒</span>
+          모든 기기 로그아웃
         </button>
       </div>
     </aside>
