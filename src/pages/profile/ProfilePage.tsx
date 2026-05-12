@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { fetchProfile, updateProfile, updateOwnerProfile } from '../../api/profile'
+import { changePassword, deleteAccount } from '../../api/account'
+import { useAuth } from '../../context/AuthContext'
 import type { UserProfile, OwnerProfile } from '../../types'
 
 export default function ProfilePage() {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [fetchError, setFetchError] = useState(false)
 
@@ -12,6 +18,18 @@ export default function ProfilePage() {
   const [savingBasic, setSavingBasic] = useState(false)
   const [basicError, setBasicError] = useState('')
   const emailRef = useRef<HTMLInputElement>(null)
+
+  // 비밀번호 변경
+  const [pwDraft, setPwDraft] = useState({ current: '', next: '', confirm: '' })
+  const [changingPw, setChangingPw] = useState(false)
+  const [pwSuccess, setPwSuccess] = useState(false)
+  const [pwError, setPwError] = useState('')
+
+  // 계정 탈퇴
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   // 사업자 정보 편집
   const [editingBiz, setEditingBiz] = useState(false)
@@ -80,6 +98,39 @@ export default function ProfilePage() {
       setBizError('저장에 실패했습니다. 다시 시도해주세요.')
     } finally {
       setSavingBiz(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      await deleteAccount()
+      await logout()
+      navigate('/login')
+    } catch {
+      setDeleteError('계정 탈퇴에 실패했습니다. 다시 시도해주세요.')
+      setDeleting(false)
+    }
+  }
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (pwDraft.next !== pwDraft.confirm) {
+      setPwError('새 비밀번호가 일치하지 않습니다.')
+      return
+    }
+    setPwError('')
+    setPwSuccess(false)
+    setChangingPw(true)
+    try {
+      await changePassword(pwDraft.current, pwDraft.next)
+      setPwDraft({ current: '', next: '', confirm: '' })
+      setPwSuccess(true)
+    } catch {
+      setPwError('비밀번호 변경에 실패했습니다. 현재 비밀번호를 확인해주세요.')
+    } finally {
+      setChangingPw(false)
     }
   }
 
@@ -211,6 +262,110 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+      {/* 비밀번호 변경 */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">비밀번호 변경</p>
+        </div>
+
+        <form onSubmit={handleChangePassword}>
+          {[
+            { key: 'current' as const, label: '현재 비밀번호', autoComplete: 'current-password' },
+            { key: 'next' as const, label: '새 비밀번호', autoComplete: 'new-password' },
+            { key: 'confirm' as const, label: '새 비밀번호 확인', autoComplete: 'new-password' },
+          ].map(({ key, label, autoComplete }, idx, arr) => (
+            <div key={key} className={`px-6 py-5 ${idx < arr.length - 1 ? 'border-b border-gray-100' : ''}`}>
+              <p className="text-xs font-medium text-gray-400 mb-1">{label}</p>
+              <input
+                type="password"
+                value={pwDraft[key]}
+                onChange={(e) => setPwDraft((prev) => ({ ...prev, [key]: e.target.value }))}
+                className="w-full text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                autoComplete={autoComplete}
+                required
+                minLength={key !== 'current' ? 8 : undefined}
+              />
+            </div>
+          ))}
+
+          {pwError && (
+            <div className="px-6 py-3 bg-red-50 border-t border-red-100">
+              <p className="text-xs text-red-500">{pwError}</p>
+            </div>
+          )}
+          {pwSuccess && (
+            <div className="px-6 py-3 bg-green-50 border-t border-green-100">
+              <p className="text-xs text-green-600">비밀번호가 성공적으로 변경되었습니다.</p>
+            </div>
+          )}
+
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+            <button
+              type="submit"
+              disabled={changingPw}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {changingPw ? '변경 중...' : '비밀번호 변경'}
+            </button>
+          </div>
+        </form>
+      </div>
+      {/* 계정 탈퇴 */}
+      <div className="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-red-100">
+          <p className="text-xs font-semibold text-red-400 uppercase tracking-wide">위험 구역</p>
+        </div>
+        <div className="px-6 py-5">
+          <p className="text-sm font-medium text-gray-800 mb-1">계정 탈퇴</p>
+          <p className="text-xs text-gray-400 mb-4">
+            탈퇴 시 모든 매장 정보, 방문 기록 등 계정과 연결된 데이터가 삭제되며 복구할 수 없습니다.
+          </p>
+          <button
+            onClick={() => { setShowDeleteModal(true); setDeleteConfirmText(''); setDeleteError('') }}
+            className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+          >
+            계정 탈퇴
+          </button>
+        </div>
+      </div>
+
+      {/* 탈퇴 확인 모달 */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+            <h3 className="text-base font-bold text-gray-900 mb-2">정말 탈퇴하시겠습니까?</h3>
+            <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+              이 작업은 되돌릴 수 없습니다. 계속하려면 아래에 <strong className="text-gray-700">탈퇴합니다</strong>를 입력해주세요.
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="탈퇴합니다"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-red-400 transition"
+            />
+            {deleteError && (
+              <p className="text-xs text-red-500 mb-3">{deleteError}</p>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== '탈퇴합니다' || deleting}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {deleting ? '처리 중...' : '탈퇴하기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

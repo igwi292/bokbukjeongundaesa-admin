@@ -1,37 +1,43 @@
 import axios from 'axios'
 
-export interface TokenPair {
-  access: string
-  refresh: string
-}
-
 export interface SignupPayload {
   email: string
   nickname: string
   phone: string
   password: string
+  agreed_to_terms: boolean
+  agreed_to_privacy: boolean
 }
 
 const base = axios.create({
   baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 })
 
 export const login = (email: string, password: string) =>
-  base.post<TokenPair>('/accounts/login/', { email, password })
+  base.post<{ access: string }>('/v1/owner/auth/login/', { email, password })
 
-export const refreshAccessToken = (refresh: string) =>
-  base.post<{ access: string }>('/accounts/token/refresh/', { refresh })
+export const refreshToken = () =>
+  base.post<{ access: string }>('/v1/owner/auth/refresh/')
+
+export const logout = () =>
+  base.post('/v1/owner/auth/logout/')
+
+export const logoutAll = () =>
+  base.post('/v1/owner/auth/logout-all/')
 
 export const signup = (payload: SignupPayload) =>
-  base.post('/accounts/register/', payload)
+  base.post('/v1/owner/auth/register/', payload)
 
-export const saveTokens = (pair: TokenPair) => {
-  localStorage.setItem('access_token', pair.access)
-  localStorage.setItem('refresh_token', pair.refresh)
-}
+export const requestPasswordReset = (email: string) =>
+  base.post('/v1/owner/auth/password/reset/request/', { email })
 
-export const clearTokens = () => {
-  localStorage.removeItem('access_token')
-  localStorage.removeItem('refresh_token')
-}
+export const confirmPasswordReset = (token: string, password: string) =>
+  base.post('/v1/owner/auth/password/reset/confirm/', { token, new_password: password })
+
+export const verifyEmail = (token: string) =>
+  base.post('/v1/owner/auth/verify-email/confirm/', { token })
+
+export const resendVerificationEmail = (email: string) =>
+  base.post('/v1/owner/auth/verify-email/request/', { email })
