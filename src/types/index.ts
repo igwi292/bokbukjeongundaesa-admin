@@ -6,7 +6,12 @@ export interface Store {
   description: string
   location: string
   is_active: boolean
+  require_approval?: boolean
+  public_url?: string
+  qr_redirect_url?: string
   qr_url: string
+  qr_scan_count?: number
+  qr_last_scanned_at?: string | null
   created_at: string
   updated_at: string
 }
@@ -19,6 +24,7 @@ export interface StoreRecord {
   content: string
   visitor_name: string | null
   status: 'pending' | 'approved' | 'rejected' | 'hidden' | 'deleted'
+  report_count?: number
   is_deleted: boolean
   created_at: string
 }

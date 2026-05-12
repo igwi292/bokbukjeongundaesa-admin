@@ -19,7 +19,11 @@ const STATUS_COLOR: Record<string, string> = {
   deleted: 'bg-red-100 text-red-500',
 }
 
+const getReportCount = (record: StoreRecord) => record.report_count ?? 0
+
 function RecordModal({ record, onClose }: { record: StoreRecord; onClose: () => void }) {
+  const reportCount = getReportCount(record)
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
@@ -43,9 +47,16 @@ function RecordModal({ record, onClose }: { record: StoreRecord; onClose: () => 
                 })}
               </p>
             </div>
-            <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_COLOR[record.status] ?? ''}`}>
-              {STATUS_LABEL[record.status] ?? record.status}
-            </span>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_COLOR[record.status] ?? ''}`}>
+                {STATUS_LABEL[record.status] ?? record.status}
+              </span>
+              {reportCount > 0 && (
+                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">
+                  신고 {reportCount.toLocaleString()}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -69,6 +80,8 @@ function RecordModal({ record, onClose }: { record: StoreRecord; onClose: () => 
 }
 
 function RecordCard({ record, onClick }: { record: StoreRecord; onClick: () => void }) {
+  const reportCount = getReportCount(record)
+
   return (
     <button
       onClick={onClick}
@@ -78,9 +91,16 @@ function RecordCard({ record, onClick }: { record: StoreRecord; onClick: () => v
         <p className="text-sm font-semibold text-gray-900 truncate">
           {record.visitor_name ?? '익명'}
         </p>
-        <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLOR[record.status] ?? ''}`}>
-          {STATUS_LABEL[record.status] ?? record.status}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLOR[record.status] ?? ''}`}>
+            {STATUS_LABEL[record.status] ?? record.status}
+          </span>
+          {reportCount > 0 && (
+            <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">
+              신고 {reportCount.toLocaleString()}
+            </span>
+          )}
+        </div>
       </div>
 
       <p className="text-sm text-gray-600 leading-relaxed line-clamp-3 mb-4">
