@@ -10,6 +10,8 @@ export interface SignupPayload {
   nickname: string
   phone: string
   password: string
+  agreed_to_terms: boolean
+  agreed_to_privacy: boolean
 }
 
 const base = axios.create({
@@ -21,7 +23,7 @@ export const login = (email: string, password: string) =>
   base.post<TokenPair>('/accounts/login/', { email, password })
 
 export const refreshAccessToken = (refresh: string) =>
-  base.post<{ access: string }>('/accounts/token/refresh/', { refresh })
+  base.post<{ access: string }>('/v1/owner/auth/refresh/', { refresh })
 
 export const signup = (payload: SignupPayload) =>
   base.post('/accounts/register/', payload)

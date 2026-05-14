@@ -8,6 +8,8 @@ interface FormState {
   phone: string
   password: string
   confirmPassword: string
+  agreed_to_terms: boolean
+  agreed_to_privacy: boolean
 }
 
 interface FieldErrors {
@@ -16,6 +18,8 @@ interface FieldErrors {
   phone?: string
   password?: string
   confirmPassword?: string
+  agreed_to_terms?: string
+  agreed_to_privacy?: string
 }
 
 export default function SignupPage() {
@@ -25,6 +29,8 @@ export default function SignupPage() {
     phone: '',
     password: '',
     confirmPassword: '',
+    agreed_to_terms: false,
+    agreed_to_privacy: false,
   })
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [serverError, setServerError] = useState('')
@@ -32,7 +38,8 @@ export default function SignupPage() {
   const navigate = useNavigate()
 
   const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, [key]: e.target.value }))
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
+    setForm((prev) => ({ ...prev, [key]: value }))
     setFieldErrors((prev) => ({ ...prev, [key]: undefined }))
   }
 
@@ -46,6 +53,10 @@ export default function SignupPage() {
       errors.password = '비밀번호는 8자 이상이어야 합니다.'
     if (form.password !== form.confirmPassword)
       errors.confirmPassword = '비밀번호가 일치하지 않습니다.'
+    if (!form.agreed_to_terms)
+      errors.agreed_to_terms = '서비스 이용약관에 동의해야 합니다.'
+    if (!form.agreed_to_privacy)
+      errors.agreed_to_privacy = '개인정보 처리방침에 동의해야 합니다.'
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -61,6 +72,8 @@ export default function SignupPage() {
         nickname: form.nickname,
         phone: form.phone,
         password: form.password,
+        agreed_to_terms: form.agreed_to_terms,
+        agreed_to_privacy: form.agreed_to_privacy,
       })
       navigate('/login')
     } catch (err: any) {
@@ -69,13 +82,15 @@ export default function SignupPage() {
       else if (data?.nickname) setFieldErrors((prev) => ({ ...prev, nickname: data.nickname[0] }))
       else if (data?.password) setFieldErrors((prev) => ({ ...prev, password: data.password[0] }))
       else if (data?.phone) setFieldErrors((prev) => ({ ...prev, phone: data.phone[0] }))
+      else if (data?.agreed_to_terms) setFieldErrors((prev) => ({ ...prev, agreed_to_terms: data.agreed_to_terms[0] }))
+      else if (data?.agreed_to_privacy) setFieldErrors((prev) => ({ ...prev, agreed_to_privacy: data.agreed_to_privacy[0] }))
       else setServerError('회원가입에 실패했습니다. 다시 시도해주세요.')
     } finally {
       setLoading(false)
     }
   }
 
-  const fields: { key: keyof FormState; label: string; type: string; required: boolean }[] = [
+  const textFields: { key: keyof FormState; label: string; type: string; required: boolean }[] = [
     { key: 'email', label: '이메일', type: 'email', required: true },
     { key: 'nickname', label: '닉네임', type: 'text', required: true },
     { key: 'phone', label: '연락처', type: 'tel', required: false },
@@ -92,7 +107,7 @@ export default function SignupPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {fields.map(({ key, label, type, required }) => (
+          {textFields.map(({ key, label, type, required }) => (
             <div key={key}>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {label}
@@ -100,7 +115,7 @@ export default function SignupPage() {
               </label>
               <input
                 type={type}
-                value={form[key]}
+                value={form[key] as string}
                 onChange={set(key)}
                 required={required}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition ${
@@ -114,6 +129,34 @@ export default function SignupPage() {
               )}
             </div>
           ))}
+
+          <div className="space-y-2 pt-1">
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.agreed_to_terms}
+                onChange={set('agreed_to_terms')}
+                className="mt-0.5 accent-indigo-600"
+              />
+              <span className="text-sm text-gray-600">서비스 이용약관에 동의합니다 <span className="text-red-500">*</span></span>
+            </label>
+            {fieldErrors.agreed_to_terms && (
+              <p className="text-xs text-red-500">{fieldErrors.agreed_to_terms}</p>
+            )}
+
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.agreed_to_privacy}
+                onChange={set('agreed_to_privacy')}
+                className="mt-0.5 accent-indigo-600"
+              />
+              <span className="text-sm text-gray-600">개인정보 처리방침에 동의합니다 <span className="text-red-500">*</span></span>
+            </label>
+            {fieldErrors.agreed_to_privacy && (
+              <p className="text-xs text-red-500">{fieldErrors.agreed_to_privacy}</p>
+            )}
+          </div>
 
           {serverError && <p className="text-sm text-red-500">{serverError}</p>}
 
