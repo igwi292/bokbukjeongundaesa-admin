@@ -1,5 +1,5 @@
 import client from './client'
-import type { PaginatedResponse, Report, ReportStatus } from '../types'
+import type { PaginatedResponse, Report, ReportAction, ReportStatus } from '../types'
 
 export const fetchReports = (params?: { page?: number; status?: ReportStatus }) =>
   client.get<PaginatedResponse<Report>>('/v1/owner/reports/', { params })
@@ -16,3 +16,19 @@ export const hideMemory = (uuid: string) =>
 
 export const deleteMemory = (uuid: string) =>
   client.delete(`/v1/owner/memories/${uuid}/`)
+
+export const resolveReport = async (report: Report, action: ReportAction): Promise<void> => {
+  switch (action) {
+    case 'hide':
+      await hideMemory(report.record_uuid)
+      await updateReportStatus(report.id, 'resolved')
+      return
+    case 'delete':
+      await deleteMemory(report.record_uuid)
+      await updateReportStatus(report.id, 'resolved')
+      return
+    case 'dismiss':
+      await updateReportStatus(report.id, 'dismissed')
+      return
+  }
+}

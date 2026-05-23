@@ -54,18 +54,20 @@ export interface PaginatedResponse<T> {
 
 export type ReportStatus = 'pending' | 'resolved' | 'dismissed'
 
-export type ReportAction = 'hide' | 'delete' | 'none'
+export type ReportAction = 'hide' | 'delete' | 'dismiss'
 
 export interface Report {
   id: number
   status: ReportStatus
-  action?: ReportAction
   reason: string
-  created_at: string
   record_uuid: string
   record_content: string
   record_status: RecordStatus
+  record_author_nickname: string
   record_store_name: string
+  record_is_deleted: boolean
+  created_at: string
+  updated_at: string
 }
 
 export interface OwnerProfile {
