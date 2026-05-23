@@ -1,5 +1,5 @@
 import client from './client'
-import type { PaginatedResponse, Report } from '../types'
+import type { PaginatedResponse, Report, ReportStatus } from '../types'
 
 export const fetchReports = (params?: { page?: number; status?: ReportStatus }) =>
   client.get<PaginatedResponse<Report>>('/v1/admin/reports/', { params })

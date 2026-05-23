@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signup } from '../../api/auth'
@@ -8,8 +9,8 @@ interface FormState {
   phone: string
   password: string
   confirmPassword: string
-  agreed_to_terms: boolean
-  agreed_to_privacy: boolean
+  agreedToTerms: boolean
+  agreedToPrivacy: boolean
 }
 
 interface FieldErrors {
@@ -18,9 +19,22 @@ interface FieldErrors {
   phone?: string
   password?: string
   confirmPassword?: string
-  agreed_to_terms?: string
-  agreed_to_privacy?: string
+  agreedToTerms?: string
+  agreedToPrivacy?: string
 }
+
+type SignupErrorPayload = {
+  email?: string[]
+  nickname?: string[]
+  phone?: string[]
+  password?: string[]
+  agreed_to_terms?: string[]
+  agreed_to_privacy?: string[]
+}
+
+type TextFieldKey = 'email' | 'nickname' | 'phone' | 'password' | 'confirmPassword'
+
+const firstError = (value?: string[]) => value?.[0]
 
 export default function SignupPage() {
   const [form, setForm] = useState<FormState>({
@@ -29,17 +43,21 @@ export default function SignupPage() {
     phone: '',
     password: '',
     confirmPassword: '',
-    agreed_to_terms: false,
-    agreed_to_privacy: false,
+    agreedToTerms: false,
+    agreedToPrivacy: false,
   })
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [serverError, setServerError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
-    setForm((prev) => ({ ...prev, [key]: value }))
+  const set = (key: TextFieldKey) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((prev) => ({ ...prev, [key]: e.target.value }))
+    setFieldErrors((prev) => ({ ...prev, [key]: undefined }))
+  }
+
+  const setAgreement = (key: 'agreedToTerms' | 'agreedToPrivacy') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((prev) => ({ ...prev, [key]: e.target.checked }))
     setFieldErrors((prev) => ({ ...prev, [key]: undefined }))
   }
 
@@ -53,10 +71,10 @@ export default function SignupPage() {
       errors.password = '비밀번호는 8자 이상이어야 합니다.'
     if (form.password !== form.confirmPassword)
       errors.confirmPassword = '비밀번호가 일치하지 않습니다.'
-    if (!form.agreed_to_terms)
-      errors.agreed_to_terms = '서비스 이용약관에 동의해야 합니다.'
-    if (!form.agreed_to_privacy)
-      errors.agreed_to_privacy = '개인정보 처리방침에 동의해야 합니다.'
+    if (!form.agreedToTerms)
+      errors.agreedToTerms = '서비스 이용약관에 동의해야 합니다.'
+    if (!form.agreedToPrivacy)
+      errors.agreedToPrivacy = '개인정보 처리방침에 동의해야 합니다.'
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -72,25 +90,32 @@ export default function SignupPage() {
         nickname: form.nickname,
         phone: form.phone,
         password: form.password,
-        agreed_to_terms: form.agreed_to_terms,
-        agreed_to_privacy: form.agreed_to_privacy,
+        agreed_to_terms: form.agreedToTerms,
+        agreed_to_privacy: form.agreedToPrivacy,
       })
-      navigate('/login')
-    } catch (err: any) {
-      const data = err?.response?.data
-      if (data?.email) setFieldErrors((prev) => ({ ...prev, email: data.email[0] }))
-      else if (data?.nickname) setFieldErrors((prev) => ({ ...prev, nickname: data.nickname[0] }))
-      else if (data?.password) setFieldErrors((prev) => ({ ...prev, password: data.password[0] }))
-      else if (data?.phone) setFieldErrors((prev) => ({ ...prev, phone: data.phone[0] }))
-      else if (data?.agreed_to_terms) setFieldErrors((prev) => ({ ...prev, agreed_to_terms: data.agreed_to_terms[0] }))
-      else if (data?.agreed_to_privacy) setFieldErrors((prev) => ({ ...prev, agreed_to_privacy: data.agreed_to_privacy[0] }))
+      navigate('/email-verify-sent', { state: { email: form.email } })
+    } catch (err: unknown) {
+      const data = isAxiosError<SignupErrorPayload>(err) ? err.response?.data : undefined
+      const emailError = firstError(data?.email)
+      const nicknameError = firstError(data?.nickname)
+      const passwordError = firstError(data?.password)
+      const phoneError = firstError(data?.phone)
+      const termsError = firstError(data?.agreed_to_terms)
+      const privacyError = firstError(data?.agreed_to_privacy)
+
+      if (emailError) setFieldErrors((prev) => ({ ...prev, email: emailError }))
+      else if (nicknameError) setFieldErrors((prev) => ({ ...prev, nickname: nicknameError }))
+      else if (passwordError) setFieldErrors((prev) => ({ ...prev, password: passwordError }))
+      else if (phoneError) setFieldErrors((prev) => ({ ...prev, phone: phoneError }))
+      else if (termsError) setFieldErrors((prev) => ({ ...prev, agreedToTerms: termsError }))
+      else if (privacyError) setFieldErrors((prev) => ({ ...prev, agreedToPrivacy: privacyError }))
       else setServerError('회원가입에 실패했습니다. 다시 시도해주세요.')
     } finally {
       setLoading(false)
     }
   }
 
-  const textFields: { key: keyof FormState; label: string; type: string; required: boolean }[] = [
+  const fields: { key: TextFieldKey; label: string; type: string; required: boolean }[] = [
     { key: 'email', label: '이메일', type: 'email', required: true },
     { key: 'nickname', label: '닉네임', type: 'text', required: true },
     { key: 'phone', label: '연락처', type: 'tel', required: false },
@@ -107,7 +132,7 @@ export default function SignupPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {textFields.map(({ key, label, type, required }) => (
+          {fields.map(({ key, label, type, required }) => (
             <div key={key}>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {label}
@@ -115,7 +140,7 @@ export default function SignupPage() {
               </label>
               <input
                 type={type}
-                value={form[key] as string}
+                value={form[key]}
                 onChange={set(key)}
                 required={required}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition ${
@@ -130,31 +155,30 @@ export default function SignupPage() {
             </div>
           ))}
 
-          <div className="space-y-2 pt-1">
-            <label className="flex items-start gap-2 cursor-pointer">
+          <div className="space-y-2">
+            <label className="flex items-start gap-2 text-sm text-gray-600">
               <input
                 type="checkbox"
-                checked={form.agreed_to_terms}
-                onChange={set('agreed_to_terms')}
-                className="mt-0.5 accent-indigo-600"
+                checked={form.agreedToTerms}
+                onChange={setAgreement('agreedToTerms')}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               />
-              <span className="text-sm text-gray-600">서비스 이용약관에 동의합니다 <span className="text-red-500">*</span></span>
+              <span>서비스 이용약관에 동의합니다.</span>
             </label>
-            {fieldErrors.agreed_to_terms && (
-              <p className="text-xs text-red-500">{fieldErrors.agreed_to_terms}</p>
+            {fieldErrors.agreedToTerms && (
+              <p className="text-xs text-red-500">{fieldErrors.agreedToTerms}</p>
             )}
-
-            <label className="flex items-start gap-2 cursor-pointer">
+            <label className="flex items-start gap-2 text-sm text-gray-600">
               <input
                 type="checkbox"
-                checked={form.agreed_to_privacy}
-                onChange={set('agreed_to_privacy')}
-                className="mt-0.5 accent-indigo-600"
+                checked={form.agreedToPrivacy}
+                onChange={setAgreement('agreedToPrivacy')}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               />
-              <span className="text-sm text-gray-600">개인정보 처리방침에 동의합니다 <span className="text-red-500">*</span></span>
+              <span>개인정보 처리방침에 동의합니다.</span>
             </label>
-            {fieldErrors.agreed_to_privacy && (
-              <p className="text-xs text-red-500">{fieldErrors.agreed_to_privacy}</p>
+            {fieldErrors.agreedToPrivacy && (
+              <p className="text-xs text-red-500">{fieldErrors.agreedToPrivacy}</p>
             )}
           </div>
 

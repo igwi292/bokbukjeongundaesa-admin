@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { login, saveTokens } from '../../api/auth'
+import { useAuth } from '../../context/AuthContext'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -8,14 +8,14 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      const { data } = await login(email, password)
-      saveTokens(data)
+      await login(email, password)
       navigate('/')
     } catch {
       setError('이메일 또는 비밀번호가 올바르지 않습니다.')
@@ -58,6 +58,12 @@ export default function LoginPage() {
 
           {error && <p className="text-sm text-red-500">{error}</p>}
 
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-xs text-gray-400 hover:text-indigo-600 transition-colors">
+              비밀번호를 잊으셨나요?
+            </Link>
+          </div>
+
           <button
             type="submit"
             disabled={loading}
@@ -69,11 +75,10 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-gray-400 mt-6">
           아직 계정이 없으신가요?{' '}
-          <Link to="/signup" className="text-indigo-600 font-medium hover:underline">
+          <Link to="/register" className="text-indigo-600 font-medium hover:underline">
             회원가입
           </Link>
         </p>
-
       </div>
     </div>
   )
