@@ -35,6 +35,24 @@ export interface StoreRecord {
   created_at: string
 }
 
+export interface OwnerMemory {
+  uuid: string
+  content: string
+  author_nickname: string
+  status: RecordStatus
+  sticker_type?: string
+  report_count: number
+  is_deleted: boolean
+  created_at: string
+  updated_at?: string
+}
+
+export interface OwnerStoreSummary {
+  slug: string
+  name: string
+  pending_count?: number
+}
+
 export interface DashboardStats {
   total_stores: number
   active_stores: number
