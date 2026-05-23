@@ -1,18 +1,8 @@
 import client from './client'
-import type { PaginatedResponse, Report, ReportStatus } from '../types'
+import type { PaginatedResponse, Report, ReportAction, ReportStatus } from '../types'
 
 export const fetchReports = (params?: { page?: number; status?: ReportStatus }) =>
   client.get<PaginatedResponse<Report>>('/v1/owner/reports/', { params })
 
-export const updateReportStatus = (
-  id: number,
-  status: 'resolved' | 'dismissed',
-  action?: 'hide' | 'delete' | 'none',
-) =>
-  client.patch(`/v1/owner/reports/${id}/`, { status, ...(action !== undefined && { action }) })
-
-export const hideMemory = (uuid: string) =>
-  client.post(`/v1/owner/memories/${uuid}/hide/`)
-
-export const deleteMemory = (uuid: string) =>
-  client.delete(`/v1/owner/memories/${uuid}/`)
+export const resolveReport = (id: number, action: ReportAction) =>
+  client.post<Report>(`/v1/owner/reports/${id}/resolve/`, { action })
