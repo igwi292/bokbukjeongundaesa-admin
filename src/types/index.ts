@@ -49,9 +49,12 @@ export interface PaginatedResponse<T> {
 
 export type ReportStatus = 'pending' | 'resolved' | 'dismissed'
 
+export type ReportAction = 'hide' | 'delete' | 'none'
+
 export interface Report {
   id: number
   status: ReportStatus
+  action?: ReportAction
   reason: string
   created_at: string
   record_uuid: string
