@@ -199,7 +199,6 @@ export default function SignupPage() {
             로그인
           </Link>
         </p>
-
       </div>
     </div>
   )

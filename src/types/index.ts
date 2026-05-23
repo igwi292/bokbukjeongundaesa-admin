@@ -16,6 +16,8 @@ export interface Store {
   updated_at: string
 }
 
+export type RecordStatus = 'pending' | 'approved' | 'rejected' | 'hidden' | 'deleted'
+
 export interface StoreRecord {
   uuid: string
   store: number
@@ -23,7 +25,7 @@ export interface StoreRecord {
   store_name: string
   content: string
   visitor_name: string | null
-  status: 'pending' | 'approved' | 'rejected' | 'hidden' | 'deleted'
+  status: RecordStatus
   report_count?: number
   is_deleted: boolean
   created_at: string
@@ -43,6 +45,19 @@ export interface PaginatedResponse<T> {
   next: string | null
   previous: string | null
   results: T[]
+}
+
+export type ReportStatus = 'pending' | 'resolved' | 'dismissed'
+
+export interface Report {
+  id: number
+  status: ReportStatus
+  reason: string
+  created_at: string
+  record_uuid: string
+  record_content: string
+  record_status: RecordStatus
+  record_store_name: string
 }
 
 export interface OwnerProfile {

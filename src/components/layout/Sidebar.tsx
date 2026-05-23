@@ -6,6 +6,7 @@ const navItems = [
   { to: '/stores', label: '내 매장', icon: '🏪' },
   { to: '/my-records', label: '우리 매장 기록', icon: '📋' },
   { to: '/records', label: '기록 관리', icon: '📝' },
+  { to: '/reports', label: '신고 관리', icon: '🚨' },
 ]
 
 export default function Sidebar() {

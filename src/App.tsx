@@ -15,6 +15,7 @@ import RecordsPage from './pages/records/RecordsPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import ProfilePage from './pages/profile/ProfilePage'
 import MyRecordsPage from './pages/my-records/MyRecordsPage'
+import ReportsPage from './pages/reports/ReportsPage'
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
               <Route path="/my-records" element={<MyRecordsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/reports" element={<ReportsPage />} />
             </Route>
           </Route>
         </Routes>
