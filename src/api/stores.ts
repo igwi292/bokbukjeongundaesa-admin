@@ -6,7 +6,8 @@ export const fetchStores = (params?: { page?: number; search?: string }) =>
 
 export const fetchMyStore = async (): Promise<{ data: Store | null }> => {
   const res = await client.get<PaginatedResponse<Store>>('/v1/owner/stores/')
-  return { data: res.data.results[0] ?? null }
+  const results: Store[] = Array.isArray(res.data) ? res.data : (res.data?.results ?? [])
+  return { data: results[0] ?? null }
 }
 
 export const fetchStore = (uuid: string) =>
