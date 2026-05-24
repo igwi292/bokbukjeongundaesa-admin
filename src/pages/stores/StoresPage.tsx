@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchMyStore, updateStore, createStore } from '../../api/stores'
 import type { Store } from '../../types'
 
 type EditableDraft = Pick<Store, 'name' | 'location' | 'description'>
+type OperationKey = 'is_active' | 'require_approval'
 
 interface Field {
   key: keyof EditableDraft
@@ -10,20 +11,26 @@ interface Field {
   placeholder: string
 }
 
-type OperationKey = 'is_active' | 'require_approval'
-
 const FIELDS: Field[] = [
   { key: 'name', label: '매장명', placeholder: '매장 이름을 입력하세요' },
   { key: 'location', label: '위치', placeholder: '주소를 입력하세요' },
   { key: 'description', label: '매장 소개', placeholder: '매장 소개를 입력하세요' },
 ]
 
+const CREATE_FIELDS = [
+  { key: 'name' as const, label: '매장명 *', placeholder: '매장 이름' },
+  { key: 'location' as const, label: '주소 *', placeholder: '매장 주소' },
+  { key: 'business_number' as const, label: '사업자번호', placeholder: '000-00-00000' },
+  { key: 'description' as const, label: '매장 소개', placeholder: '매장 소개 (선택)' },
+]
+
+// ── helpers ────────────────────────────────────────────────────────────────
+
 async function copyText(value: string) {
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(value)
     return
   }
-
   const textarea = document.createElement('textarea')
   textarea.value = value
   textarea.style.position = 'fixed'
@@ -35,6 +42,116 @@ async function copyText(value: string) {
   document.body.removeChild(textarea)
   if (!copied) throw new Error('copy failed')
 }
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+
+function Toast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  const dismissRef = useRef(onDismiss)
+  dismissRef.current = onDismiss
+  useEffect(() => {
+    const t = window.setTimeout(() => dismissRef.current(), 4000)
+    return () => window.clearTimeout(t)
+  }, [])
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 bg-red-600 text-white text-sm px-5 py-3 rounded-xl shadow-lg whitespace-nowrap">
+      {message}
+      <button
+        onClick={onDismiss}
+        className="ml-1 text-white/70 hover:text-white leading-none"
+        aria-label="닫기"
+      >
+        ✕
+      </button>
+    </div>
+  )
+}
+
+// ── CreateStoreModal ───────────────────────────────────────────────────────
+
+function CreateStoreModal({
+  onCreated,
+  onClose,
+  onError,
+}: {
+  onCreated: () => void
+  onClose: () => void
+  onError: (msg: string) => void
+}) {
+  const [draft, setDraft] = useState({ name: '', location: '', description: '', business_number: '' })
+  const [saving, setSaving] = useState(false)
+  const [fieldError, setFieldError] = useState('')
+
+  const handleSubmit = async () => {
+    if (!draft.name.trim()) { setFieldError('매장명을 입력해주세요.'); return }
+    if (!draft.location.trim()) { setFieldError('주소를 입력해주세요.'); return }
+    setFieldError('')
+    setSaving(true)
+    try {
+      await createStore(draft)
+      onCreated()
+    } catch {
+      onError('매장 등록에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+          <p className="text-base font-semibold text-gray-900">새 매장 등록</p>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 leading-none"
+            aria-label="닫기"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          {CREATE_FIELDS.map(({ key, label, placeholder }) => (
+            <div key={key}>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+              <input
+                type="text"
+                value={draft[key]}
+                placeholder={placeholder}
+                onChange={(e) => setDraft((prev) => ({ ...prev, [key]: e.target.value }))}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          ))}
+          {fieldError && <p className="text-xs text-red-500">{fieldError}</p>}
+        </div>
+        <div className="flex justify-end gap-2 px-6 pb-6">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          >
+            취소
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          >
+            {saving ? '등록 중...' : '매장 등록'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── QrCard ─────────────────────────────────────────────────────────────────
 
 function QrCard({ store }: { store: Store }) {
   const [copyFeedback, setCopyFeedback] = useState('')
@@ -132,6 +249,8 @@ function QrCard({ store }: { store: Store }) {
   )
 }
 
+// ── SettingSwitch ──────────────────────────────────────────────────────────
+
 function SettingSwitch({
   checked,
   disabled,
@@ -160,6 +279,8 @@ function SettingSwitch({
     </button>
   )
 }
+
+// ── OperationSettingsCard ──────────────────────────────────────────────────
 
 function OperationSettingsCard({
   store,
@@ -226,58 +347,7 @@ function OperationSettingsCard({
   )
 }
 
-function CreateStoreForm({ onCreated }: { onCreated: (store: Store) => void }) {
-  const [draft, setDraft] = useState({ name: '', location: '', description: '', business_number: '' })
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-
-  const handleSubmit = async () => {
-    if (!draft.name.trim()) { setError('매장명을 입력해주세요.'); return }
-    setSaving(true)
-    setError('')
-    try {
-      const res = await createStore(draft)
-      onCreated(res.data)
-    } catch {
-      setError('매장 등록에 실패했습니다.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-lg">
-      <p className="text-sm font-medium text-gray-700 mb-4">아직 등록된 매장이 없습니다. 첫 매장을 등록해보세요.</p>
-      <div className="space-y-3">
-        {[
-          { key: 'name', label: '매장명', placeholder: '매장 이름' },
-          { key: 'location', label: '위치', placeholder: '주소' },
-          { key: 'business_number', label: '사업자번호', placeholder: '000-00-00000' },
-          { key: 'description', label: '매장 소개', placeholder: '매장 소개 (선택)' },
-        ].map(({ key, label, placeholder }) => (
-          <div key={key}>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
-            <input
-              type="text"
-              value={draft[key as keyof typeof draft]}
-              placeholder={placeholder}
-              onChange={(e) => setDraft((prev) => ({ ...prev, [key]: e.target.value }))}
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-        ))}
-      </div>
-      {error && <p className="text-xs text-red-500 mt-3">{error}</p>}
-      <button
-        onClick={handleSubmit}
-        disabled={saving}
-        className="mt-4 w-full bg-indigo-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-      >
-        {saving ? '등록 중...' : '매장 등록하기'}
-      </button>
-    </div>
-  )
-}
+// ── StoresPage ─────────────────────────────────────────────────────────────
 
 export default function StoresPage() {
   const [store, setStore] = useState<Store | null | undefined>(undefined)
@@ -287,9 +357,12 @@ export default function StoresPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
   const firstInputRef = useRef<HTMLInputElement>(null)
 
-  const load = () => {
+  const dismissToast = useCallback(() => setToastMessage(''), [])
+
+  const load = useCallback(() => {
     setFetchError(false)
     fetchMyStore()
       .then((res) => {
@@ -299,9 +372,9 @@ export default function StoresPage() {
         }
       })
       .catch(() => setFetchError(true))
-  }
+  }, [])
 
-  useEffect(() => { queueMicrotask(load) }, [])
+  useEffect(() => { queueMicrotask(load) }, [load])
 
   const handleEdit = () => {
     if (!store) return
@@ -328,6 +401,11 @@ export default function StoresPage() {
     }
   }
 
+  const handleCreated = useCallback(() => {
+    setShowCreateModal(false)
+    load()
+  }, [load])
+
   if (fetchError) {
     return (
       <div className="max-w-lg">
@@ -348,50 +426,58 @@ export default function StoresPage() {
     )
   }
 
+  const pageHeader = (
+    <div className="flex items-center justify-between mb-8">
+      <h2 className="text-xl font-bold text-gray-900">내 매장</h2>
+      <button
+        onClick={() => setShowCreateModal(true)}
+        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+      >
+        + 새 매장 등록
+      </button>
+    </div>
+  )
+
+  const modal = showCreateModal ? (
+    <CreateStoreModal
+      onCreated={handleCreated}
+      onClose={() => setShowCreateModal(false)}
+      onError={setToastMessage}
+    />
+  ) : null
+
+  const toast = toastMessage ? <Toast message={toastMessage} onDismiss={dismissToast} /> : null
+
   if (store === null) {
     return (
       <div className="max-w-lg">
-        <h2 className="text-xl font-bold text-gray-900 mb-8">내 매장</h2>
-        <CreateStoreForm onCreated={(s) => setStore(s)} />
+        {pageHeader}
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 py-20 gap-5 text-center">
+          <div className="w-14 h-14 rounded-full bg-indigo-50 flex items-center justify-center text-2xl">
+            🏪
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-700">아직 등록된 매장이 없어요</p>
+            <p className="text-xs text-gray-400 mt-1">첫 매장을 등록하고 QR 코드를 받아보세요.</p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            + 새 매장 등록
+          </button>
+        </div>
+        {modal}
+        {toast}
       </div>
     )
   }
 
   return (
     <div className="max-w-lg">
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-xl font-bold text-gray-900">내 매장</h2>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          + 새 매장 등록
-        </button>
-      </div>
-
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg">
-            <button
-              onClick={() => setShowCreateModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg leading-none"
-              aria-label="닫기"
-            >
-              ✕
-            </button>
-            <div className="p-6 pt-5">
-              <p className="text-base font-semibold text-gray-900 mb-4">새 매장 등록</p>
-              <CreateStoreForm
-                onCreated={(s) => {
-                  setStore(s)
-                  setDraft({ name: s.name, location: s.location, description: s.description })
-                  setShowCreateModal(false)
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {pageHeader}
+      {modal}
+      {toast}
 
       {/* 편집 가능 필드 */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
