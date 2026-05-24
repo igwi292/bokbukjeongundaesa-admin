@@ -286,6 +286,7 @@ export default function StoresPage() {
   const [draft, setDraft] = useState<EditableDraft>({ name: '', location: '', description: '' })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const firstInputRef = useRef<HTMLInputElement>(null)
 
   const load = () => {
@@ -358,7 +359,39 @@ export default function StoresPage() {
 
   return (
     <div className="max-w-lg">
-      <h2 className="text-xl font-bold text-gray-900 mb-8">내 매장</h2>
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-xl font-bold text-gray-900">내 매장</h2>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+        >
+          + 새 매장 등록
+        </button>
+      </div>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg">
+            <button
+              onClick={() => setShowCreateModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg leading-none"
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+            <div className="p-6 pt-5">
+              <p className="text-base font-semibold text-gray-900 mb-4">새 매장 등록</p>
+              <CreateStoreForm
+                onCreated={(s) => {
+                  setStore(s)
+                  setDraft({ name: s.name, location: s.location, description: s.description })
+                  setShowCreateModal(false)
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 편집 가능 필드 */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
