@@ -81,7 +81,8 @@ function CreateStoreModal({
   const [saving, setSaving] = useState(false)
   const [fieldError, setFieldError] = useState('')
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault()
     if (!draft.name.trim()) { setFieldError('매장명을 입력해주세요.'); return }
     if (!draft.location.trim()) { setFieldError('주소를 입력해주세요.'); return }
     setFieldError('')
@@ -89,7 +90,8 @@ function CreateStoreModal({
     try {
       await createStore(draft)
       onCreated()
-    } catch {
+    } catch (err) {
+      console.error('[CreateStore] API error:', err)
       onError('매장 등록에 실패했습니다. 다시 시도해주세요.')
     } finally {
       setSaving(false)
@@ -108,6 +110,7 @@ function CreateStoreModal({
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
           <p className="text-base font-semibold text-gray-900">새 매장 등록</p>
           <button
+            type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 leading-none"
             aria-label="닫기"
@@ -115,37 +118,40 @@ function CreateStoreModal({
             ✕
           </button>
         </div>
-        <div className="px-6 py-5 space-y-4">
-          {CREATE_FIELDS.map(({ key, label, placeholder }) => (
-            <div key={key}>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
-              <input
-                type="text"
-                value={draft[key]}
-                placeholder={placeholder}
-                onChange={(e) => setDraft((prev) => ({ ...prev, [key]: e.target.value }))}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-          ))}
-          {fieldError && <p className="text-xs text-red-500">{fieldError}</p>}
-        </div>
-        <div className="flex justify-end gap-2 px-6 pb-6">
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
-          >
-            취소
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-          >
-            {saving ? '등록 중...' : '매장 등록'}
-          </button>
-        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="px-6 py-5 space-y-4">
+            {CREATE_FIELDS.map(({ key, label, placeholder }) => (
+              <div key={key}>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+                <input
+                  type="text"
+                  value={draft[key]}
+                  placeholder={placeholder}
+                  onChange={(e) => setDraft((prev) => ({ ...prev, [key]: e.target.value }))}
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            ))}
+            {fieldError && <p className="text-xs text-red-500">{fieldError}</p>}
+          </div>
+          <div className="flex justify-end gap-2 px-6 pb-6">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {saving ? '등록 중...' : '매장 등록'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
@@ -297,7 +303,7 @@ function OperationSettingsCard({
     setSavingKey(key)
     setError('')
     try {
-      const res = await updateStore(store.uuid, { [key]: value } as Partial<Store>)
+      const res = await updateStore(store.slug, { [key]: value } as Partial<Store>)
       onUpdated(res.data)
     } catch {
       setError('운영 설정 저장에 실패했습니다. 다시 시도해주세요.')
@@ -391,7 +397,7 @@ export default function StoresPage() {
     setSaving(true)
     setSaveError('')
     try {
-      const res = await updateStore(store.uuid, draft)
+      const res = await updateStore(store.slug, draft)
       setStore(res.data)
       setEditing(false)
     } catch {
