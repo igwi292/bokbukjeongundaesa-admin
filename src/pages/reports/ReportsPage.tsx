@@ -43,7 +43,7 @@ export default function ReportsPage() {
     const params = statusFilter ? { status: statusFilter } : {}
     return fetchReports(params)
       .then((res) => {
-        if (requestId === requestIdRef.current) setReports(res.data.results)
+        if (requestId === requestIdRef.current) setReports(res.data?.results ?? [])
       })
       .catch(() => {
         if (requestId === requestIdRef.current) setFetchError(true)

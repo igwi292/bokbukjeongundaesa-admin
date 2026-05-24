@@ -43,9 +43,10 @@ export default function RecordsPage() {
     setFetchError(false)
     fetchRecords(statusFilter === 'reported' ? undefined : { status: statusFilter })
       .then((res) => {
+        const all = res.data?.results ?? []
         const results = statusFilter === 'reported'
-          ? res.data.results.filter((record) => getReportCount(record) > 0)
-          : res.data.results
+          ? all.filter((record) => getReportCount(record) > 0)
+          : all
         setRecords(results)
       })
       .catch(() => setFetchError(true))
