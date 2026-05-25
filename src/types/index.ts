@@ -38,6 +38,7 @@ export interface DashboardStats {
   pending_records: number
   monthly_new_stores: number
   monthly_new_records: number
+  pending_reports: number
 }
 
 export interface PaginatedResponse<T> {

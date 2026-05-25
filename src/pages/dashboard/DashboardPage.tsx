@@ -44,6 +44,7 @@ export default function DashboardPage() {
           <StatCard label="활성 매장" value={stats.active_stores} />
           <StatCard label="전체 기록" value={stats.total_records} sub={`이번 달 +${stats.monthly_new_records ?? 0}`} />
           <StatCard label="승인 대기 기록" value={stats.pending_records} />
+          <StatCard label="대기 중 신고" value={stats.pending_reports} />
         </div>
       ) : (
         <p className="text-gray-400 text-sm">불러오는 중...</p>
