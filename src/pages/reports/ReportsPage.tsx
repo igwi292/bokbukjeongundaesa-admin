@@ -53,7 +53,7 @@ export default function ReportsPage() {
       })
   }, [statusFilter])
 
-  useEffect(() => { loadReports() }, [loadReports])
+  useEffect(() => { queueMicrotask(loadReports) }, [loadReports])
 
   const handleFilterChange = (value: '' | ReportStatus) => {
     setStatusFilter(value)

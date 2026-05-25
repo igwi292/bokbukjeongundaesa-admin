@@ -7,6 +7,9 @@ export interface Store {
   location: string
   is_active: boolean
   require_approval?: boolean
+  marker_image?: string
+  marker_image_url?: string
+  marker_real_size_m?: number
   public_url?: string
   qr_redirect_url?: string
   qr_url: string
@@ -25,6 +28,7 @@ export interface StoreRecord {
   store_name: string
   content: string
   visitor_name: string | null
+  author_nickname?: string
   status: RecordStatus
   report_count?: number
   is_deleted: boolean
