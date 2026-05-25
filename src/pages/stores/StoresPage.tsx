@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { fetchMyStore, updateStore, createStore } from '../../api/stores'
+import { fetchMyStore, updateStore, createStore, updateStoreMarker } from '../../api/stores'
 import type { Store } from '../../types'
 
 type EditableDraft = Pick<Store, 'name' | 'location' | 'description'>
@@ -47,7 +47,9 @@ async function copyText(value: string) {
 
 function Toast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
   const dismissRef = useRef(onDismiss)
-  dismissRef.current = onDismiss
+  useEffect(() => {
+    dismissRef.current = onDismiss
+  }, [onDismiss])
   useEffect(() => {
     const t = window.setTimeout(() => dismissRef.current(), 4000)
     return () => window.clearTimeout(t)
@@ -353,6 +355,101 @@ function OperationSettingsCard({
   )
 }
 
+// ── MarkerSettingsCard ─────────────────────────────────────────────────────
+
+function MarkerSettingsCard({
+  store,
+  onUpdated,
+}: {
+  store: Store
+  onUpdated: (store: Store) => void
+}) {
+  const [file, setFile] = useState<File | null>(null)
+  const [realSize, setRealSize] = useState(String(store.marker_real_size_m ?? 0.1))
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
+  const hasMarker = !!store.marker_image_url
+
+  const handleSave = async () => {
+    const size = Number(realSize)
+    if (!Number.isFinite(size) || size <= 0) {
+      setMessage('마커 실측 가로 길이를 올바르게 입력해주세요.')
+      return
+    }
+    if (!file && !hasMarker) {
+      setMessage('마커 이미지를 선택해주세요.')
+      return
+    }
+    setSaving(true)
+    setMessage('')
+    try {
+      const res = await updateStoreMarker(store.slug, {
+        marker_image: file ?? undefined,
+        marker_real_size_m: size,
+      })
+      onUpdated(res.data)
+      setFile(null)
+      setMessage('AR 마커가 저장되었습니다.')
+    } catch {
+      setMessage('AR 마커 저장에 실패했습니다.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
+      <div className="px-6 pt-6 pb-2">
+        <p className="text-xs font-medium text-gray-400 mb-1">AR 마커</p>
+        <p className="text-xs text-gray-400">손님 카메라가 현실 공간의 기준점으로 인식할 이미지를 등록합니다.</p>
+      </div>
+      <div className="px-6 py-5 space-y-4">
+        {store.marker_image_url ? (
+          <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+            <img src={store.marker_image_url} alt="등록된 AR 마커" className="max-h-40 w-full object-contain" />
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-8 text-center text-xs text-gray-400">
+            등록된 마커 이미지가 없습니다.
+          </div>
+        )}
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">마커 이미지</label>
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            className="w-full text-sm text-gray-600"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">실제 가로 길이(m)</label>
+          <input
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={realSize}
+            onChange={(e) => setRealSize(e.target.value)}
+            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        {message && (
+          <p className={`text-xs ${message.includes('실패') || message.includes('선택') || message.includes('올바르게') ? 'text-red-500' : 'text-indigo-600'}`}>
+            {message}
+          </p>
+        )}
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full py-2 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+        >
+          {saving ? '저장 중...' : hasMarker ? '마커 업데이트' : '마커 등록'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── StoresPage ─────────────────────────────────────────────────────────────
 
 export default function StoresPage() {
@@ -546,6 +643,7 @@ export default function StoresPage() {
       </div>
 
       <OperationSettingsCard store={store} onUpdated={setStore} />
+      <MarkerSettingsCard key={store.slug} store={store} onUpdated={setStore} />
 
       {/* 읽기 전용 메타 정보 */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
