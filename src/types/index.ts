@@ -38,6 +38,7 @@ export interface DashboardStats {
   pending_records: number
   monthly_new_stores: number
   monthly_new_records: number
+  pending_reports: number
 }
 
 export interface PaginatedResponse<T> {
@@ -49,9 +50,12 @@ export interface PaginatedResponse<T> {
 
 export type ReportStatus = 'pending' | 'resolved' | 'dismissed'
 
+export type ReportAction = 'hide' | 'delete' | 'none'
+
 export interface Report {
   id: number
   status: ReportStatus
+  action?: ReportAction
   reason: string
   created_at: string
   record_uuid: string

@@ -118,6 +118,7 @@ export default function MyRecordsPage() {
   const [records, setRecords] = useState<StoreRecord[]>([])
   const [loading, setLoading] = useState(false)
   const [fetchError, setFetchError] = useState(false)
+  const [noStore, setNoStore] = useState(false)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [selected, setSelected] = useState<StoreRecord | null>(null)
@@ -125,13 +126,18 @@ export default function MyRecordsPage() {
   const load = () => {
     setLoading(true)
     setFetchError(false)
+    setNoStore(false)
     fetchMyStore()
       .then((res) => {
-        if (!res.data) { setLoading(false); return }
+        if (!res.data) {
+          setNoStore(true)
+          setLoading(false)
+          return
+        }
         return fetchRecords()
       })
       .then((res) => {
-        if (res) setRecords(res.data.results)
+        if (res) setRecords(res.data?.results ?? [])
       })
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false))
@@ -182,7 +188,7 @@ export default function MyRecordsPage() {
           </div>
         </div>
 
-        {!loading && (
+        {!loading && !noStore && (
           <p className="text-xs text-gray-400 mb-4">총 {filtered.length.toLocaleString()}개의 기록</p>
         )}
 
@@ -194,6 +200,11 @@ export default function MyRecordsPage() {
           <div className="flex flex-col items-center justify-center h-48 gap-3">
             <p className="text-sm text-red-500">기록을 불러오지 못했습니다.</p>
             <button onClick={load} className="text-sm text-indigo-600 hover:underline">다시 시도</button>
+          </div>
+        ) : noStore ? (
+          <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+            <p className="text-sm">등록된 매장이 없습니다.</p>
+            <p className="mt-1 text-xs">먼저 내 매장 메뉴에서 매장을 등록해주세요.</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-gray-400">
