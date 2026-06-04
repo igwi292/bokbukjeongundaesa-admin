@@ -1,12 +1,13 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { Icon, type IconName } from '../ui/Icon'
 
-const navItems = [
-  { to: '/', label: '대시보드', icon: '📊' },
-  { to: '/stores', label: '내 매장', icon: '🏪' },
-  { to: '/my-records', label: '우리 매장 기록', icon: '📋' },
-  { to: '/records', label: '기록 관리', icon: '📝' },
-  { to: '/reports', label: '신고 관리', icon: '🚨' },
+const navItems: { to: string; label: string; icon: IconName }[] = [
+  { to: '/', label: '대시보드', icon: 'layout-dashboard' },
+  { to: '/stores', label: '내 매장', icon: 'store' },
+  { to: '/my-records', label: '우리 매장 기록', icon: 'clipboard-list' },
+  { to: '/records', label: '기록 관리', icon: 'notebook-pen' },
+  { to: '/reports', label: '신고 관리', icon: 'flag' },
 ]
 
 export default function Sidebar() {
@@ -24,56 +25,49 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="w-60 bg-white border-r border-gray-200 min-h-screen flex flex-col">
-      <div className="px-6 py-5 border-b border-gray-200">
-        <h1 className="text-lg font-bold text-gray-900">복붙전권대사</h1>
-        <p className="text-xs text-gray-400 mt-0.5">관리자 콘솔</p>
+    <aside className="sb">
+      <div className="sb-brand">
+        <img src="/sds-logo.svg" alt="" />
+        <div>
+          <div className="t">복붙전권대사</div>
+          <div className="s">관리자 콘솔</div>
+        </div>
       </div>
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="sb-nav">
         {navItems.map(({ to, label, icon }) => (
           <NavLink
             key={to}
             to={to}
             end={to === '/'}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-indigo-50 text-indigo-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`
-            }
+            className={({ isActive }) => `ni${isActive ? ' active' : ''}`}
           >
-            <span>{icon}</span>
+            <span className="ico">
+              <Icon name={icon} />
+            </span>
             {label}
           </NavLink>
         ))}
       </nav>
-      <div className="px-4 py-4 border-t border-gray-200 space-y-1">
+      <div className="sb-foot">
         <NavLink
           to="/profile"
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              isActive
-                ? 'bg-indigo-50 text-indigo-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-            }`
-          }
+          className={({ isActive }) => `ni${isActive ? ' active' : ''}`}
         >
-          <span>👤</span>
+          <span className="ico">
+            <Icon name="user" />
+          </span>
           프로필
         </NavLink>
-        <button
-          onClick={handleLogout}
-          className="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-        >
-          <span>🚪</span>
+        <button className="ni" onClick={handleLogout}>
+          <span className="ico">
+            <Icon name="log-out" />
+          </span>
           로그아웃
         </button>
-        <button
-          onClick={handleLogoutAll}
-          className="w-full text-left flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-        >
-          <span>🔒</span>
+        <button className="ni danger" onClick={handleLogoutAll}>
+          <span className="ico">
+            <Icon name="lock" />
+          </span>
           모든 기기 로그아웃
         </button>
       </div>

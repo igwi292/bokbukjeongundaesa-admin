@@ -23,51 +23,46 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 w-full max-w-sm p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-normal text-gray-900">비밀번호 재설정</h1>
-          <p className="text-sm text-gray-500 mt-1">가입한 이메일로 재설정 링크를 보내드립니다</p>
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <div className="auth-brand">
+          <img src="/sds-logo.svg" alt="" />
+          <span className="t">복붙전권대사</span>
         </div>
+        <h1 className="auth-h">비밀번호 재설정</h1>
+        <p className="auth-sub">가입한 이메일로 재설정 링크를 보내드립니다.</p>
 
         {sent ? (
-          <div className="text-center space-y-3">
-            <p className="text-sm text-gray-700">
-              <span className="font-medium">{email}</span>로<br />재설정 링크를 발송했습니다.
+          <div className="stack gap-3" style={{ textAlign: 'center' }}>
+            <p className="ds-body" style={{ fontSize: 14 }}>
+              <strong>{email}</strong>로<br />재설정 링크를 발송했습니다.
             </p>
-            <p className="text-xs text-gray-400">이메일이 오지 않는다면 스팸함을 확인해 주세요.</p>
-            <Link to="/login" className="block text-sm text-indigo-600 font-medium hover:underline pt-2">
+            <p className="t-mute" style={{ fontSize: 12 }}>이메일이 오지 않는다면 스팸함을 확인해 주세요.</p>
+            <Link to="/login" className="auth-foot" style={{ marginTop: 0 }}>
               로그인으로 돌아가기
             </Link>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+          <form onSubmit={handleSubmit} className="stack gap-4">
+            <div className="field">
+              <label>이메일</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 autoComplete="email"
                 required
               />
             </div>
 
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && <p className="note err">{error}</p>}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-indigo-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-            >
+            <button type="submit" disabled={loading} className="btn btn-primary btn-block">
               {loading ? '발송 중...' : '재설정 링크 보내기'}
             </button>
 
-            <p className="text-center text-sm text-gray-400">
-              <Link to="/login" className="text-indigo-600 font-medium hover:underline">
-                로그인으로 돌아가기
-              </Link>
+            <p className="auth-foot" style={{ marginTop: 0 }}>
+              <Link to="/login">로그인으로 돌아가기</Link>
             </p>
           </form>
         )}

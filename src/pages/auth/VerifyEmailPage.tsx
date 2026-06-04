@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { verifyEmail } from '../../api/auth'
+import { Icon } from '../../components/ui/Icon'
 
 type Status = 'loading' | 'success' | 'error' | 'missing'
 
@@ -19,88 +20,70 @@ export default function VerifyEmailPage() {
 
   const config = {
     loading: {
-      iconBg: 'bg-gray-50',
-      iconColor: 'text-gray-400',
-      icon: (
-        <svg className="w-7 h-7 animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-        </svg>
-      ),
+      bg: 'var(--gray-50)',
+      color: 'var(--gray-400)',
+      icon: 'bell' as const,
       title: '이메일 인증 중...',
       desc: '잠시만 기다려주세요.',
-      action: null,
+      showAction: false,
+      actionLabel: '',
     },
     success: {
-      iconBg: 'bg-green-50',
-      iconColor: 'text-green-500',
-      icon: (
-        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-      ),
+      bg: 'var(--positive-bg)',
+      color: 'var(--positive)',
+      icon: 'check' as const,
       title: '이메일 인증 완료!',
       desc: '계정이 활성화되었습니다. 이제 로그인하실 수 있습니다.',
-      action: (
-        <Link
-          to="/login"
-          className="block w-full bg-indigo-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-indigo-700 transition-colors mt-6"
-        >
-          로그인하기
-        </Link>
-      ),
+      showAction: true,
+      actionLabel: '로그인하기',
     },
     error: {
-      iconBg: 'bg-red-50',
-      iconColor: 'text-red-500',
-      icon: (
-        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      ),
+      bg: 'var(--danger-bg)',
+      color: 'var(--danger)',
+      icon: 'x' as const,
       title: '인증에 실패했습니다',
       desc: '링크가 만료되었거나 유효하지 않습니다. 다시 로그인하거나 이메일을 재발송해주세요.',
-      action: (
-        <Link
-          to="/login"
-          className="block w-full bg-indigo-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-indigo-700 transition-colors mt-6"
-        >
-          로그인 페이지로 이동
-        </Link>
-      ),
+      showAction: true,
+      actionLabel: '로그인 페이지로 이동',
     },
     missing: {
-      iconBg: 'bg-yellow-50',
-      iconColor: 'text-yellow-500',
-      icon: (
-        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
-        </svg>
-      ),
+      bg: 'var(--warning-bg)',
+      color: 'var(--warning)',
+      icon: 'flag' as const,
       title: '유효하지 않은 링크',
       desc: '인증 토큰이 포함되지 않은 링크입니다. 이메일 내 링크를 다시 확인해주세요.',
-      action: (
-        <Link
-          to="/login"
-          className="block w-full bg-indigo-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-indigo-700 transition-colors mt-6"
-        >
-          로그인 페이지로 이동
-        </Link>
-      ),
+      showAction: true,
+      actionLabel: '로그인 페이지로 이동',
     },
   } as const
 
   const c = config[status]
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 w-full max-w-sm p-8 text-center">
-        <div className={`w-14 h-14 ${c.iconBg} rounded-full flex items-center justify-center mx-auto mb-6`}>
-          <span className={c.iconColor}>{c.icon}</span>
+    <div className="auth-wrap">
+      <div className="auth-card" style={{ textAlign: 'center' }}>
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            background: c.bg,
+            color: c.color,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 24px',
+          }}
+        >
+          <Icon name={c.icon} size={26} />
         </div>
-        <h1 className="text-xl font-bold text-gray-900 mb-3">{c.title}</h1>
-        <p className="text-sm text-gray-500 leading-relaxed">{c.desc}</p>
-        {c.action}
+        <h1 className="auth-h">{c.title}</h1>
+        <p className="t-mute" style={{ fontSize: 14, lineHeight: 1.6 }}>{c.desc}</p>
+        {c.showAction && (
+          <Link to="/login" className="btn btn-primary btn-block" style={{ marginTop: 24 }}>
+            {c.actionLabel}
+          </Link>
+        )}
       </div>
     </div>
   )

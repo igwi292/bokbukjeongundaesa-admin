@@ -32,10 +32,10 @@ export default function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <p className="text-sm text-red-500">유효하지 않은 재설정 링크입니다.</p>
-          <Link to="/forgot-password" className="text-sm text-indigo-600 font-medium hover:underline">
+      <div className="auth-wrap">
+        <div className="stack gap-3" style={{ textAlign: 'center' }}>
+          <p className="note err">유효하지 않은 재설정 링크입니다.</p>
+          <Link to="/forgot-password" className="auth-foot" style={{ marginTop: 0 }}>
             다시 요청하기
           </Link>
         </div>
@@ -44,45 +44,41 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 w-full max-w-sm p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-normal text-gray-900">새 비밀번호 설정</h1>
-          <p className="text-sm text-gray-500 mt-1">새로운 비밀번호를 입력해 주세요</p>
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <div className="auth-brand">
+          <img src="/sds-logo.svg" alt="" />
+          <span className="t">복붙전권대사</span>
         </div>
+        <h1 className="auth-h">새 비밀번호 설정</h1>
+        <p className="auth-sub">새로운 비밀번호를 입력해 주세요.</p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">새 비밀번호</label>
+        <form onSubmit={handleSubmit} className="stack gap-4">
+          <div className="field">
+            <label>새 비밀번호</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               autoComplete="new-password"
               required
               minLength={8}
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">새 비밀번호 확인</label>
+          <div className="field">
+            <label>새 비밀번호 확인</label>
             <input
               type="password"
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               autoComplete="new-password"
               required
             />
           </div>
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="note err">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-          >
+          <button type="submit" disabled={loading} className="btn btn-primary btn-block">
             {loading ? '변경 중...' : '비밀번호 변경하기'}
           </button>
         </form>

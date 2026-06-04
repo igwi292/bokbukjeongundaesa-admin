@@ -124,80 +124,73 @@ export default function SignupPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 w-full max-w-sm p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-normal text-gray-900">복붙전권대사</h1>
-          <p className="text-sm text-gray-500 mt-1">사장님 회원가입</p>
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <div className="auth-brand">
+          <img src="/sds-logo.svg" alt="" />
+          <span className="t">복붙전권대사</span>
         </div>
+        <h1 className="auth-h">사장님 회원가입</h1>
+        <p className="auth-sub">매장을 등록하고 방문 기록을 받아보세요.</p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="stack gap-4">
           {fields.map(({ key, label, type, required }) => (
-            <div key={key}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="field" key={key}>
+              <label>
                 {label}
-                {!required && <span className="text-gray-400 font-normal ml-1">(선택)</span>}
+                {!required && <span className="t-mute" style={{ fontWeight: 400, marginLeft: 4 }}>(선택)</span>}
               </label>
               <input
                 type={type}
                 value={form[key]}
                 onChange={set(key)}
                 required={required}
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition ${
-                  fieldErrors[key]
-                    ? 'border-red-400 focus:ring-red-300'
-                    : 'border-gray-300 focus:ring-indigo-500'
-                }`}
+                style={fieldErrors[key] ? { borderColor: 'var(--danger)' } : undefined}
               />
               {fieldErrors[key] && (
-                <p className="text-xs text-red-500 mt-1">{fieldErrors[key]}</p>
+                <p className="t-mute" style={{ fontSize: 12, color: 'var(--danger-text)', marginTop: 4 }}>
+                  {fieldErrors[key]}
+                </p>
               )}
             </div>
           ))}
 
-          <div className="space-y-2">
-            <label className="flex items-start gap-2 text-sm text-gray-600">
+          <div className="stack gap-2">
+            <label className="row gap-2" style={{ alignItems: 'flex-start', fontSize: 14, color: 'var(--gray-600)' }}>
               <input
                 type="checkbox"
                 checked={form.agreedToTerms}
                 onChange={setAgreement('agreedToTerms')}
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                style={{ marginTop: 3, width: 16, height: 16, accentColor: 'var(--brand)' }}
               />
               <span>서비스 이용약관에 동의합니다.</span>
             </label>
             {fieldErrors.agreedToTerms && (
-              <p className="text-xs text-red-500">{fieldErrors.agreedToTerms}</p>
+              <p className="t-mute" style={{ fontSize: 12, color: 'var(--danger-text)' }}>{fieldErrors.agreedToTerms}</p>
             )}
-            <label className="flex items-start gap-2 text-sm text-gray-600">
+            <label className="row gap-2" style={{ alignItems: 'flex-start', fontSize: 14, color: 'var(--gray-600)' }}>
               <input
                 type="checkbox"
                 checked={form.agreedToPrivacy}
                 onChange={setAgreement('agreedToPrivacy')}
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                style={{ marginTop: 3, width: 16, height: 16, accentColor: 'var(--brand)' }}
               />
               <span>개인정보 처리방침에 동의합니다.</span>
             </label>
             {fieldErrors.agreedToPrivacy && (
-              <p className="text-xs text-red-500">{fieldErrors.agreedToPrivacy}</p>
+              <p className="t-mute" style={{ fontSize: 12, color: 'var(--danger-text)' }}>{fieldErrors.agreedToPrivacy}</p>
             )}
           </div>
 
-          {serverError && <p className="text-sm text-red-500">{serverError}</p>}
+          {serverError && <p className="note err">{serverError}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-          >
+          <button type="submit" disabled={loading} className="btn btn-primary btn-block">
             {loading ? '가입 중...' : '회원가입'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-400 mt-6">
-          이미 계정이 있으신가요?{' '}
-          <Link to="/login" className="text-indigo-600 font-medium hover:underline">
-            로그인
-          </Link>
+        <p className="auth-foot">
+          이미 계정이 있으신가요? <Link to="/login">로그인</Link>
         </p>
       </div>
     </div>

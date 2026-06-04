@@ -12,26 +12,22 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [fetchError, setFetchError] = useState(false)
 
-  // 기본 정보 편집
   const [editingBasic, setEditingBasic] = useState(false)
   const [basicDraft, setBasicDraft] = useState({ email: '', phone: '' })
   const [savingBasic, setSavingBasic] = useState(false)
   const [basicError, setBasicError] = useState('')
   const emailRef = useRef<HTMLInputElement>(null)
 
-  // 비밀번호 변경
   const [pwDraft, setPwDraft] = useState({ current: '', next: '', confirm: '' })
   const [changingPw, setChangingPw] = useState(false)
   const [pwSuccess, setPwSuccess] = useState(false)
   const [pwError, setPwError] = useState('')
 
-  // 계정 탈퇴
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
 
-  // 사업자 정보 편집
   const [editingBiz, setEditingBiz] = useState(false)
   const [bizDraft, setBizDraft] = useState({ business_name: '', business_registration_number: '' })
   const [savingBiz, setSavingBiz] = useState(false)
@@ -52,7 +48,9 @@ export default function ProfilePage() {
       .catch(() => setFetchError(true))
   }
 
-  useEffect(() => { queueMicrotask(load) }, [])
+  useEffect(() => {
+    queueMicrotask(load)
+  }, [])
 
   const handleEditBasic = () => {
     if (!profile) return
@@ -92,7 +90,7 @@ export default function ProfilePage() {
     setBizError('')
     try {
       const res = await updateOwnerProfile(bizDraft)
-      setProfile((prev) => prev ? { ...prev, owner_profile: res.data } : prev)
+      setProfile((prev) => (prev ? { ...prev, owner_profile: res.data } : prev))
       setEditingBiz(false)
     } catch {
       setBizError('저장에 실패했습니다. 다시 시도해주세요.')
@@ -136,74 +134,73 @@ export default function ProfilePage() {
 
   if (fetchError) {
     return (
-      <div className="max-w-lg">
-        <h2 className="text-xl font-bold text-gray-900 mb-8">프로필</h2>
-        <div className="flex flex-col items-center justify-center h-48 gap-3">
-          <p className="text-sm text-red-500">프로필을 불러오지 못했습니다.</p>
-          <button onClick={load} className="text-sm text-indigo-600 hover:underline">다시 시도</button>
+      <div style={{ maxWidth: 560 }}>
+        <div className="page-h">
+          <h2>프로필</h2>
+        </div>
+        <div className="empty stack gap-3" style={{ alignItems: 'center' }}>
+          <span style={{ color: 'var(--danger-text)' }}>프로필을 불러오지 못했습니다.</span>
+          <button onClick={load} className="btn btn-neutral btn-sm">
+            다시 시도
+          </button>
         </div>
       </div>
     )
   }
 
   if (!profile) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-sm text-gray-400">불러오는 중...</p>
-      </div>
-    )
+    return <div className="empty">불러오는 중...</div>
   }
 
   return (
-    <div className="max-w-lg space-y-4">
-      <h2 className="text-xl font-bold text-gray-900">프로필</h2>
+    <div className="stack gap-4" style={{ maxWidth: 560 }}>
+      <div className="page-h" style={{ marginBottom: 0 }}>
+        <h2>프로필</h2>
+      </div>
 
       {/* 기본 정보 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">기본 정보</p>
+      <div className="card">
+        <div className="card-h">
+          <div className="ct">기본 정보</div>
         </div>
-
-        <div className="px-6 py-5 border-b border-gray-100">
-          <p className="text-xs font-medium text-gray-400 mb-1">닉네임</p>
-          <p className="text-sm font-medium text-gray-900">{profile.nickname || <span className="text-gray-400">미입력</span>}</p>
+        <div className="set-row" style={{ display: 'block' }}>
+          <div className="sd" style={{ marginTop: 0, marginBottom: 4 }}>닉네임</div>
+          <div className="sl">{profile.nickname || <span className="t-mute">미입력</span>}</div>
         </div>
-
         {(['email', 'phone'] as const).map((key, idx) => (
-          <div key={key} className={`px-6 py-5 ${idx === 0 ? 'border-b border-gray-100' : ''}`}>
-            <p className="text-xs font-medium text-gray-400 mb-1">{key === 'email' ? '이메일' : '연락처'}</p>
+          <div key={key} className="set-row" style={{ display: 'block' }}>
+            <div className="sd" style={{ marginTop: 0, marginBottom: 4 }}>{key === 'email' ? '이메일' : '연락처'}</div>
             {editingBasic ? (
-              <input
-                ref={idx === 0 ? emailRef : undefined}
-                type={key === 'email' ? 'email' : 'tel'}
-                value={basicDraft[key]}
-                onChange={(e) => setBasicDraft((prev) => ({ ...prev, [key]: e.target.value }))}
-                className="w-full text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              />
+              <div className="field">
+                <input
+                  ref={idx === 0 ? emailRef : undefined}
+                  type={key === 'email' ? 'email' : 'tel'}
+                  value={basicDraft[key]}
+                  onChange={(e) => setBasicDraft((prev) => ({ ...prev, [key]: e.target.value }))}
+                />
+              </div>
             ) : (
-              <p className="text-sm font-medium text-gray-900">{profile[key] || <span className="text-gray-400">미입력</span>}</p>
+              <div className="sl">{profile[key] || <span className="t-mute">미입력</span>}</div>
             )}
           </div>
         ))}
-
         {basicError && (
-          <div className="px-6 py-3 bg-red-50 border-t border-red-100">
-            <p className="text-xs text-red-500">{basicError}</p>
+          <div style={{ padding: '12px 20px' }}>
+            <p className="note err">{basicError}</p>
           </div>
         )}
-
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
+        <div className="tbl-foot" style={{ justifyContent: 'flex-end' }}>
           {editingBasic ? (
-            <>
-              <button onClick={() => { setEditingBasic(false); setBasicError('') }} disabled={savingBasic} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors">
+            <div className="row gap-2">
+              <button onClick={() => { setEditingBasic(false); setBasicError('') }} disabled={savingBasic} className="btn btn-neutral btn-sm">
                 취소
               </button>
-              <button onClick={handleSaveBasic} disabled={savingBasic} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+              <button onClick={handleSaveBasic} disabled={savingBasic} className="btn btn-primary btn-sm">
                 {savingBasic ? '저장 중...' : '저장하기'}
               </button>
-            </>
+            </div>
           ) : (
-            <button onClick={handleEditBasic} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <button onClick={handleEditBasic} className="btn btn-neutral btn-sm">
               수정하기
             </button>
           )}
@@ -211,118 +208,113 @@ export default function ProfilePage() {
       </div>
 
       {/* 사업자 정보 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">사업자 정보</p>
+      <div className="card">
+        <div className="card-h">
+          <div className="ct">사업자 정보</div>
         </div>
-
-        {([
-          { key: 'business_name' as keyof OwnerProfile, label: '상호명' },
-          { key: 'business_registration_number' as keyof OwnerProfile, label: '사업자번호' },
-        ]).map(({ key, label }, idx) => (
-          <div key={key} className={`px-6 py-5 ${idx === 0 ? 'border-b border-gray-100' : ''}`}>
-            <p className="text-xs font-medium text-gray-400 mb-1">{label}</p>
+        {(
+          [
+            { key: 'business_name' as keyof OwnerProfile, label: '상호명' },
+            { key: 'business_registration_number' as keyof OwnerProfile, label: '사업자번호' },
+          ]
+        ).map(({ key, label }, idx) => (
+          <div key={key} className="set-row" style={{ display: 'block' }}>
+            <div className="sd" style={{ marginTop: 0, marginBottom: 4 }}>{label}</div>
             {editingBiz ? (
-              <input
-                ref={idx === 0 ? bizNameRef : undefined}
-                type="text"
-                value={bizDraft[key]}
-                onChange={(e) => setBizDraft((prev) => ({ ...prev, [key]: e.target.value }))}
-                placeholder={key === 'business_registration_number' ? '000-00-00000' : ''}
-                className="w-full text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              />
+              <div className="field">
+                <input
+                  ref={idx === 0 ? bizNameRef : undefined}
+                  type="text"
+                  value={bizDraft[key]}
+                  onChange={(e) => setBizDraft((prev) => ({ ...prev, [key]: e.target.value }))}
+                  placeholder={key === 'business_registration_number' ? '000-00-00000' : ''}
+                />
+              </div>
             ) : (
-              <p className="text-sm font-medium text-gray-900">
-                {profile.owner_profile?.[key] || <span className="text-gray-400">미입력</span>}
-              </p>
+              <div className="sl">{profile.owner_profile?.[key] || <span className="t-mute">미입력</span>}</div>
             )}
           </div>
         ))}
-
         {bizError && (
-          <div className="px-6 py-3 bg-red-50 border-t border-red-100">
-            <p className="text-xs text-red-500">{bizError}</p>
+          <div style={{ padding: '12px 20px' }}>
+            <p className="note err">{bizError}</p>
           </div>
         )}
-
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
+        <div className="tbl-foot" style={{ justifyContent: 'flex-end' }}>
           {editingBiz ? (
-            <>
-              <button onClick={() => { setEditingBiz(false); setBizError('') }} disabled={savingBiz} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors">
+            <div className="row gap-2">
+              <button onClick={() => { setEditingBiz(false); setBizError('') }} disabled={savingBiz} className="btn btn-neutral btn-sm">
                 취소
               </button>
-              <button onClick={handleSaveBiz} disabled={savingBiz} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+              <button onClick={handleSaveBiz} disabled={savingBiz} className="btn btn-primary btn-sm">
                 {savingBiz ? '저장 중...' : '저장하기'}
               </button>
-            </>
+            </div>
           ) : (
-            <button onClick={handleEditBiz} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            <button onClick={handleEditBiz} className="btn btn-neutral btn-sm">
               수정하기
             </button>
           )}
         </div>
       </div>
-      {/* 비밀번호 변경 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">비밀번호 변경</p>
-        </div>
 
+      {/* 비밀번호 변경 */}
+      <div className="card">
+        <div className="card-h">
+          <div className="ct">비밀번호 변경</div>
+        </div>
         <form onSubmit={handleChangePassword}>
           {[
             { key: 'current' as const, label: '현재 비밀번호', autoComplete: 'current-password' },
             { key: 'next' as const, label: '새 비밀번호', autoComplete: 'new-password' },
             { key: 'confirm' as const, label: '새 비밀번호 확인', autoComplete: 'new-password' },
-          ].map(({ key, label, autoComplete }, idx, arr) => (
-            <div key={key} className={`px-6 py-5 ${idx < arr.length - 1 ? 'border-b border-gray-100' : ''}`}>
-              <p className="text-xs font-medium text-gray-400 mb-1">{label}</p>
-              <input
-                type="password"
-                value={pwDraft[key]}
-                onChange={(e) => setPwDraft((prev) => ({ ...prev, [key]: e.target.value }))}
-                className="w-full text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-                autoComplete={autoComplete}
-                required
-                minLength={key !== 'current' ? 8 : undefined}
-              />
+          ].map(({ key, label, autoComplete }) => (
+            <div key={key} className="set-row" style={{ display: 'block' }}>
+              <div className="sd" style={{ marginTop: 0, marginBottom: 4 }}>{label}</div>
+              <div className="field">
+                <input
+                  type="password"
+                  value={pwDraft[key]}
+                  onChange={(e) => setPwDraft((prev) => ({ ...prev, [key]: e.target.value }))}
+                  autoComplete={autoComplete}
+                  required
+                  minLength={key !== 'current' ? 8 : undefined}
+                />
+              </div>
             </div>
           ))}
-
           {pwError && (
-            <div className="px-6 py-3 bg-red-50 border-t border-red-100">
-              <p className="text-xs text-red-500">{pwError}</p>
+            <div style={{ padding: '12px 20px' }}>
+              <p className="note err">{pwError}</p>
             </div>
           )}
           {pwSuccess && (
-            <div className="px-6 py-3 bg-green-50 border-t border-green-100">
-              <p className="text-xs text-green-600">비밀번호가 성공적으로 변경되었습니다.</p>
+            <div style={{ padding: '12px 20px' }}>
+              <p className="note ok">비밀번호가 성공적으로 변경되었습니다.</p>
             </div>
           )}
-
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
-            <button
-              type="submit"
-              disabled={changingPw}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-            >
+          <div className="tbl-foot" style={{ justifyContent: 'flex-end' }}>
+            <button type="submit" disabled={changingPw} className="btn btn-primary btn-sm">
               {changingPw ? '변경 중...' : '비밀번호 변경'}
             </button>
           </div>
         </form>
       </div>
+
       {/* 계정 탈퇴 */}
-      <div className="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-red-100">
-          <p className="text-xs font-semibold text-red-400 uppercase tracking-wide">위험 구역</p>
+      <div className="card" style={{ borderColor: 'var(--danger-bg)' }}>
+        <div className="card-h">
+          <div className="ct" style={{ color: 'var(--danger)' }}>위험 구역</div>
         </div>
-        <div className="px-6 py-5">
-          <p className="text-sm font-medium text-gray-800 mb-1">계정 탈퇴</p>
-          <p className="text-xs text-gray-400 mb-4">
+        <div className="card-pad">
+          <div className="sl" style={{ marginBottom: 4 }}>계정 탈퇴</div>
+          <div className="sd" style={{ marginBottom: 16 }}>
             탈퇴 시 모든 매장 정보, 방문 기록 등 계정과 연결된 데이터가 삭제되며 복구할 수 없습니다.
-          </p>
+          </div>
           <button
             onClick={() => { setShowDeleteModal(true); setDeleteConfirmText(''); setDeleteError('') }}
-            className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+            className="btn btn-sm"
+            style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-bg)' }}
           >
             계정 탈퇴
           </button>
@@ -331,34 +323,32 @@ export default function ProfilePage() {
 
       {/* 탈퇴 확인 모달 */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
-            <h3 className="text-base font-bold text-gray-900 mb-2">정말 탈퇴하시겠습니까?</h3>
-            <p className="text-sm text-gray-500 mb-4 leading-relaxed">
-              이 작업은 되돌릴 수 없습니다. 계속하려면 아래에 <strong className="text-gray-700">탈퇴합니다</strong>를 입력해주세요.
-            </p>
-            <input
-              type="text"
-              value={deleteConfirmText}
-              onChange={(e) => setDeleteConfirmText(e.target.value)}
-              placeholder="탈퇴합니다"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-red-400 transition"
-            />
-            {deleteError && (
-              <p className="text-xs text-red-500 mb-3">{deleteError}</p>
-            )}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                disabled={deleting}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
-              >
+        <div className="scrim">
+          <div className="modal" style={{ maxWidth: 400 }}>
+            <div className="modal-b">
+              <h3 className="mt" style={{ fontSize: 16, fontWeight: 700 }}>정말 탈퇴하시겠습니까?</h3>
+              <p className="t-mute" style={{ fontSize: 14, lineHeight: 1.5 }}>
+                이 작업은 되돌릴 수 없습니다. 계속하려면 아래에{' '}
+                <strong className="t-strong">탈퇴합니다</strong>를 입력해주세요.
+              </p>
+              <div className="field">
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="탈퇴합니다"
+                />
+              </div>
+              {deleteError && <p className="note err">{deleteError}</p>}
+            </div>
+            <div className="modal-f">
+              <button onClick={() => setShowDeleteModal(false)} disabled={deleting} className="btn btn-neutral btn-block">
                 취소
               </button>
               <button
                 onClick={handleDeleteAccount}
                 disabled={deleteConfirmText !== '탈퇴합니다' || deleting}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                className="btn btn-danger btn-block"
               >
                 {deleting ? '처리 중...' : '탈퇴하기'}
               </button>

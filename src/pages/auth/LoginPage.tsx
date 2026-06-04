@@ -25,59 +25,52 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 w-full max-w-sm p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-normal text-gray-900">복붙전권대사</h1>
-          <p className="text-sm text-gray-500 mt-1">사장님 로그인</p>
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <div className="auth-brand">
+          <img src="/sds-logo.svg" alt="" />
+          <span className="t">복붙전권대사</span>
         </div>
+        <h1 className="auth-h">사장님 로그인</h1>
+        <p className="auth-sub">매장과 방문 기록을 관리하세요.</p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+        <form onSubmit={handleSubmit} className="stack gap-4">
+          <div className="field">
+            <label>이메일</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               autoComplete="email"
               required
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호</label>
+          <div className="field">
+            <label>비밀번호</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               autoComplete="current-password"
               required
             />
           </div>
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="note err">{error}</p>}
 
-          <div className="text-right">
-            <Link to="/forgot-password" className="text-xs text-gray-400 hover:text-indigo-600 transition-colors">
+          <div style={{ textAlign: 'right' }}>
+            <Link to="/forgot-password" className="link-act" style={{ color: 'var(--fg-muted)' }}>
               비밀번호를 잊으셨나요?
             </Link>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-          >
+          <button type="submit" disabled={loading} className="btn btn-primary btn-block">
             {loading ? '로그인 중...' : '로그인'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-400 mt-6">
-          아직 계정이 없으신가요?{' '}
-          <Link to="/register" className="text-indigo-600 font-medium hover:underline">
-            회원가입
-          </Link>
+        <p className="auth-foot">
+          아직 계정이 없으신가요? <Link to="/register">회원가입</Link>
         </p>
       </div>
     </div>
