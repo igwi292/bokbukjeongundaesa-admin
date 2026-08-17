@@ -10,11 +10,24 @@ export interface Store {
   marker_image?: string
   marker_image_url?: string
   marker_real_size_m?: number
+  active_marker?: StoreMarker | null
   public_url?: string
   qr_redirect_url?: string
   qr_url: string
   qr_scan_count?: number
   qr_last_scanned_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface StoreMarker {
+  id: string
+  version: number
+  image_url: string
+  image_sha256: string
+  physical_width_m: number
+  coordinate_frame: 'marker_local_v2'
+  is_active: boolean
   created_at: string
   updated_at: string
 }

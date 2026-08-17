@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { fetchMyStore, updateStore, createStore, updateStoreMarker } from '../../api/stores'
+import {
+  activateStoreMarker,
+  createStore,
+  createStoreMarker,
+  fetchMyStore,
+  fetchStoreMarkers,
+  updateStore,
+} from '../../api/stores'
 import { Icon } from '../../components/ui/Icon'
 import { Toggle } from '../../components/ui/Toggle'
-import type { Store } from '../../types'
+import type { Store, StoreMarker } from '../../types'
 
 type EditableDraft = Pick<Store, 'name' | 'location' | 'description'>
 type OperationKey = 'is_active' | 'require_approval'
@@ -286,11 +293,24 @@ function OperationSettingsCard({ store, onUpdated }: { store: Store; onUpdated: 
 
 function MarkerSettingsCard({ store, onUpdated }: { store: Store; onUpdated: (store: Store) => void }) {
   const [file, setFile] = useState<File | null>(null)
-  const [realSize, setRealSize] = useState(String(store.marker_real_size_m ?? 0.1))
+  const [realSize, setRealSize] = useState(String(store.active_marker?.physical_width_m ?? store.marker_real_size_m ?? 0.1))
+  const [markers, setMarkers] = useState<StoreMarker[]>([])
   const [saving, setSaving] = useState(false)
+  const [activatingId, setActivatingId] = useState<string | null>(null)
   const [message, setMessage] = useState('')
-  const hasMarker = !!store.marker_image_url
+  const activeMarker = markers.find((marker) => marker.is_active) ?? store.active_marker ?? null
+  const hasMarker = !!activeMarker || !!store.marker_image_url
   const isErr = message.includes('실패') || message.includes('선택') || message.includes('올바르게')
+
+  const loadMarkers = useCallback(() => {
+    fetchStoreMarkers(store.slug)
+      .then((response) => setMarkers(response.data))
+      .catch(() => setMessage('마커 버전 기록을 불러오지 못했습니다.'))
+  }, [store.slug])
+
+  useEffect(() => {
+    void loadMarkers()
+  }, [loadMarkers])
 
   const handleSave = async () => {
     const size = Number(realSize)
@@ -298,24 +318,55 @@ function MarkerSettingsCard({ store, onUpdated }: { store: Store; onUpdated: (st
       setMessage('마커 실측 가로 길이를 올바르게 입력해주세요.')
       return
     }
-    if (!file && !hasMarker) {
-      setMessage('마커 이미지를 선택해주세요.')
+    if (!file) {
+      setMessage('새 마커 버전에 사용할 이미지를 선택해주세요.')
       return
     }
     setSaving(true)
     setMessage('')
     try {
-      const res = await updateStoreMarker(store.slug, {
-        marker_image: file ?? undefined,
-        marker_real_size_m: size,
+      const res = await createStoreMarker(store.slug, {
+        image: file,
+        physical_width_m: size,
       })
-      onUpdated(res.data)
+      onUpdated({
+        ...store,
+        active_marker: res.data,
+        marker_image_url: res.data.image_url,
+        marker_real_size_m: res.data.physical_width_m,
+      })
       setFile(null)
-      setMessage('AR 마커가 저장되었습니다.')
+      setMarkers((current) => [res.data, ...current.map((marker) => ({ ...marker, is_active: false }))])
+      setMessage(`AR 마커 v${res.data.version}이 활성화되었습니다.`)
     } catch {
       setMessage('AR 마커 저장에 실패했습니다.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleActivate = async (marker: StoreMarker) => {
+    if (marker.is_active) return
+    setActivatingId(marker.id)
+    setMessage('')
+    try {
+      const response = await activateStoreMarker(store.slug, marker.id)
+      setMarkers((current) => current.map((item) => ({
+        ...item,
+        is_active: item.id === response.data.id,
+      })))
+      onUpdated({
+        ...store,
+        active_marker: response.data,
+        marker_image_url: response.data.image_url,
+        marker_real_size_m: response.data.physical_width_m,
+      })
+      setRealSize(String(response.data.physical_width_m))
+      setMessage(`AR 마커 v${response.data.version}으로 되돌렸습니다.`)
+    } catch {
+      setMessage('이전 마커 활성화에 실패했습니다.')
+    } finally {
+      setActivatingId(null)
     }
   }
 
@@ -326,9 +377,9 @@ function MarkerSettingsCard({ store, onUpdated }: { store: Store; onUpdated: (st
         <div className="cs">손님 카메라가 현실 공간의 기준점으로 인식할 이미지를 등록합니다.</div>
       </div>
       <div className="card-pad stack gap-4">
-        {store.marker_image_url ? (
+        {(activeMarker?.image_url || store.marker_image_url) ? (
           <div style={{ borderRadius: 'var(--radius-md)', border: '1px solid var(--gray-100)', background: 'var(--gray-50)', padding: 12 }}>
-            <img src={store.marker_image_url} alt="등록된 AR 마커" style={{ maxHeight: 160, width: '100%', objectFit: 'contain' }} />
+            <img src={activeMarker?.image_url || store.marker_image_url} alt="등록된 AR 마커" style={{ maxHeight: 160, width: '100%', objectFit: 'contain' }} />
           </div>
         ) : (
           <div
@@ -339,7 +390,7 @@ function MarkerSettingsCard({ store, onUpdated }: { store: Store; onUpdated: (st
           </div>
         )}
         <div className="field">
-          <label>마커 이미지</label>
+          <label>새 마커 버전 이미지</label>
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp"
@@ -357,8 +408,33 @@ function MarkerSettingsCard({ store, onUpdated }: { store: Store; onUpdated: (st
           </p>
         )}
         <button onClick={handleSave} disabled={saving} className="btn btn-primary btn-block">
-          {saving ? '저장 중...' : hasMarker ? '마커 업데이트' : '마커 등록'}
+          {saving ? '저장 중...' : hasMarker ? '새 버전 등록' : '마커 등록'}
         </button>
+        {markers.length > 0 && (
+          <div className="stack gap-2">
+            <div className="sl">버전 기록</div>
+            {markers.map((marker) => (
+              <div className="set-row" key={marker.id} style={{ padding: '12px 0' }}>
+                <div className="min-w-0">
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>
+                    v{marker.version} · {(marker.physical_width_m * 100).toFixed(1)}cm
+                  </div>
+                  <div className="t-mute" style={{ fontSize: 11 }}>
+                    {new Date(marker.created_at).toLocaleString('ko-KR')} · {marker.image_sha256.slice(0, 12)}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className={marker.is_active ? 'btn btn-sm btn-brand' : 'btn btn-sm btn-neutral'}
+                  disabled={marker.is_active || activatingId !== null}
+                  onClick={() => handleActivate(marker)}
+                >
+                  {marker.is_active ? '사용 중' : activatingId === marker.id ? '전환 중...' : '이 버전 사용'}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import client from './client'
-import type { Store } from '../types'
+import type { Store, StoreMarker } from '../types'
 
 type RawStore = Store & { place_id?: string; uuid?: string }
 type StoreListResponse = RawStore[] | { results?: RawStore[] }
@@ -28,12 +28,18 @@ export const createStore = (
 export const updateStore = (slug: string, data: Partial<Store>) =>
   client.patch<Store>(`/v1/owner/stores/${slug}/`, data)
 
-export const updateStoreMarker = (
+export const createStoreMarker = (
   slug: string,
-  data: { marker_image?: File; marker_real_size_m: number }
+  data: { image: File; physical_width_m: number }
 ) => {
   const form = new FormData()
-  if (data.marker_image) form.append('marker_image', data.marker_image)
-  form.append('marker_real_size_m', String(data.marker_real_size_m))
-  return client.patch<Store>(`/v1/owner/stores/${slug}/`, form)
+  form.append('image', data.image)
+  form.append('physical_width_m', String(data.physical_width_m))
+  return client.post<StoreMarker>(`/v1/owner/stores/${slug}/markers/`, form)
 }
+
+export const fetchStoreMarkers = (slug: string) =>
+  client.get<StoreMarker[]>(`/v1/owner/stores/${slug}/markers/`)
+
+export const activateStoreMarker = (slug: string, markerId: string) =>
+  client.post<StoreMarker>(`/v1/owner/stores/${slug}/markers/${markerId}/activate/`)
