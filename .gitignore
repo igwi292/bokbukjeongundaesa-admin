@@ -28,3 +28,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Android native app
+.gradle/
+/.kotlin/
+/build/
+local.properties
+app/build/
+captures/
+*.iml
