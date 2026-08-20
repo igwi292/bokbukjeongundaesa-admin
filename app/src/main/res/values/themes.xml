@@ -1,9 +1,9 @@
 <resources>
     <style name="Theme.MiddleSpaceAdmin" parent="android:Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:windowBackground">#07111F</item>
-        <item name="android:statusBarColor">#07111F</item>
-        <item name="android:navigationBarColor">#07111F</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowBackground">#F7F0E6</item>
+        <item name="android:statusBarColor">#F7F0E6</item>
+        <item name="android:navigationBarColor">#F7F0E6</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

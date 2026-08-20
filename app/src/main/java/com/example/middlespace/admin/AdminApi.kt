@@ -5,6 +5,10 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import android.util.Base64
+import androidx.core.content.edit
 import com.example.middlespace.admin.BuildConfig
 import org.json.JSONArray
 import org.json.JSONObject
@@ -12,7 +16,12 @@ import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
+import java.security.KeyStore
 import java.util.UUID
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
 
 class AdminApiException(message: String) : Exception(message)
 
@@ -20,18 +29,80 @@ class SessionStore(context: Context) {
     private val preferences = context.getSharedPreferences("middle_space_admin_session", Context.MODE_PRIVATE)
 
     fun load(): AdminSession? {
-        val access = preferences.getString("access", null)?.takeIf(String::isNotBlank) ?: return null
-        return AdminSession(access, preferences.getString("refresh_cookie", null))
+        val encryptedAccess = preferences.getString(KEY_ACCESS_ENCRYPTED, null)
+        if (!encryptedAccess.isNullOrBlank()) {
+            val access = decrypt(encryptedAccess) ?: return null
+            return AdminSession(
+                access,
+                preferences.getString(KEY_REFRESH_ENCRYPTED, null)?.let(::decrypt),
+            )
+        }
+
+        // One-time migration from the original plaintext preference keys.
+        val legacyAccess = preferences.getString(KEY_ACCESS_LEGACY, null)?.takeIf(String::isNotBlank)
+            ?: return null
+        val legacy = AdminSession(legacyAccess, preferences.getString(KEY_REFRESH_LEGACY, null))
+        save(legacy)
+        return legacy
     }
 
     fun save(session: AdminSession) {
-        preferences.edit()
-            .putString("access", session.accessToken)
-            .putString("refresh_cookie", session.refreshCookie)
-            .apply()
+        preferences.edit {
+            putString(KEY_ACCESS_ENCRYPTED, encrypt(session.accessToken))
+            putString(KEY_REFRESH_ENCRYPTED, session.refreshCookie?.let(::encrypt))
+            remove(KEY_ACCESS_LEGACY)
+            remove(KEY_REFRESH_LEGACY)
+        }
     }
 
-    fun clear() = preferences.edit().clear().apply()
+    fun clear() = preferences.edit { clear() }
+
+    private fun encrypt(value: String): String {
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
+        val iv = Base64.encodeToString(cipher.iv, Base64.NO_WRAP)
+        val ciphertext = Base64.encodeToString(cipher.doFinal(value.toByteArray(Charsets.UTF_8)), Base64.NO_WRAP)
+        return "$iv:$ciphertext"
+    }
+
+    private fun decrypt(value: String): String? = runCatching {
+        val parts = value.split(':', limit = 2)
+        require(parts.size == 2)
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(
+            Cipher.DECRYPT_MODE,
+            getOrCreateKey(),
+            GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)),
+        )
+        String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), Charsets.UTF_8)
+    }.getOrNull()
+
+    private fun getOrCreateKey(): SecretKey {
+        val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
+        (keyStore.getKey(KEY_ALIAS, null) as? SecretKey)?.let { return it }
+        return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KEYSTORE_PROVIDER).run {
+            init(
+                KeyGenParameterSpec.Builder(
+                    KEY_ALIAS,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+                )
+                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                    .build(),
+            )
+            generateKey()
+        }
+    }
+
+    private companion object {
+        const val KEY_ACCESS_ENCRYPTED = "access_encrypted"
+        const val KEY_REFRESH_ENCRYPTED = "refresh_cookie_encrypted"
+        const val KEY_ACCESS_LEGACY = "access"
+        const val KEY_REFRESH_LEGACY = "refresh_cookie"
+        const val KEY_ALIAS = "middle_space_admin_session_key"
+        const val KEYSTORE_PROVIDER = "AndroidKeyStore"
+        const val TRANSFORMATION = "AES/GCM/NoPadding"
+    }
 }
 
 class AdminApi(
@@ -39,6 +110,46 @@ class AdminApi(
     private val sessionStore: SessionStore,
     private val baseUrl: String = BuildConfig.API_BASE_URL.trimEnd('/'),
 ) {
+    fun register(
+        email: String,
+        nickname: String,
+        phone: String,
+        password: String,
+    ) {
+        val result = execute(
+            method = "POST",
+            path = "/v1/owner/auth/register/",
+            jsonBody = JSONObject()
+                .put("email", email)
+                .put("nickname", nickname)
+                .put("phone", phone)
+                .put("password", password)
+                .put("agreed_to_terms", true)
+                .put("agreed_to_privacy", true),
+        )
+        ensureSuccess(result)
+    }
+
+    fun resendVerificationEmail(email: String) {
+        ensureSuccess(
+            execute(
+                method = "POST",
+                path = "/v1/owner/auth/verify-email/request/",
+                jsonBody = JSONObject().put("email", email),
+            ),
+        )
+    }
+
+    fun verifyEmail(token: String) {
+        ensureSuccess(
+            execute(
+                method = "POST",
+                path = "/v1/owner/auth/verify-email/confirm/",
+                jsonBody = JSONObject().put("token", token),
+            ),
+        )
+    }
+
     fun login(email: String, password: String): AdminSession {
         val result = execute(
             method = "POST",
@@ -51,20 +162,70 @@ class AdminApi(
     }
 
     fun logout() {
-        runCatching { authenticated("POST", "/v1/owner/auth/logout/") }
+        runCatching {
+            authenticated("POST", "/v1/owner/auth/logout/", includeRefreshCookie = true)
+        }
         sessionStore.clear()
     }
 
-    fun fetchStore(): Store? {
+    fun fetchStores(): List<Store> {
         val result = authenticated("GET", "/v1/owner/stores/")
         val array = if (result.text.trimStart().startsWith("[")) {
             JSONArray(result.text)
         } else {
             JSONObject(result.text).optJSONArray("results") ?: JSONArray()
         }
-        if (array.length() == 0) return null
-        val slug = array.getJSONObject(0).getString("slug")
-        return parseStore(JSONObject(authenticated("GET", "/v1/owner/stores/${Uri.encode(slug)}/").text))
+        return buildList {
+            for (index in 0 until array.length()) {
+                add(fetchStore(array.getJSONObject(index).getString("slug")))
+            }
+        }
+    }
+
+    fun fetchStore(slug: String): Store = parseStore(
+        JSONObject(authenticated("GET", "/v1/owner/stores/${Uri.encode(slug)}/").text),
+    )
+
+    fun fetchQrStats(slug: String): QrStats {
+        val json = JSONObject(
+            authenticated("GET", "/v1/owner/stores/${Uri.encode(slug)}/qr/stats/").text,
+        )
+        val dailyJson = json.optJSONArray("daily") ?: JSONArray()
+        val daily = buildList {
+            for (index in 0 until dailyJson.length()) {
+                val item = dailyJson.getJSONObject(index)
+                add(QrScanDay(item.getString("date"), item.optInt("count")))
+            }
+        }
+        return QrStats(
+            totalCount = json.optInt("total_count"),
+            lastScannedAt = json.optString("last_scanned_at").takeIf { it.isNotBlank() && it != "null" },
+            periodCount = json.optInt("period_count"),
+            daily = daily,
+        )
+    }
+
+    fun fetchMemories(slug: String, status: String? = null): List<OwnerMemory> {
+        val suffix = status?.takeIf(String::isNotBlank)?.let { "?status=${Uri.encode(it.lowercase())}" }.orEmpty()
+        val json = JSONObject(
+            authenticated("GET", "/v1/owner/stores/${Uri.encode(slug)}/memories/$suffix").text,
+        )
+        val items = json.optJSONArray("items") ?: JSONArray()
+        return buildList {
+            for (index in 0 until items.length()) add(parseMemory(items.getJSONObject(index)))
+        }
+    }
+
+    fun updateMemoryStatus(memoryId: String, action: String): OwnerMemory {
+        require(action in setOf("approve", "reject", "hide"))
+        return parseMemory(
+            JSONObject(
+                authenticated(
+                    "POST",
+                    "/v1/owner/memories/${Uri.encode(memoryId)}/$action/",
+                ).text,
+            ),
+        )
     }
 
     fun createStore(
@@ -128,12 +289,29 @@ class AdminApi(
         }
     }
 
-    private fun authenticated(method: String, path: String, body: JSONObject? = null): HttpResult {
+    private fun authenticated(
+        method: String,
+        path: String,
+        body: JSONObject? = null,
+        includeRefreshCookie: Boolean = false,
+    ): HttpResult {
         var session = sessionStore.load() ?: throw AdminApiException("로그인이 필요합니다.")
-        var result = execute(method, path, body, accessToken = session.accessToken)
+        var result = execute(
+            method,
+            path,
+            body,
+            accessToken = session.accessToken,
+            cookie = session.refreshCookie.takeIf { includeRefreshCookie },
+        )
         if (result.code == HttpURLConnection.HTTP_UNAUTHORIZED && session.refreshCookie != null) {
             session = refresh(session.refreshCookie)
-            result = execute(method, path, body, accessToken = session.accessToken)
+            result = execute(
+                method,
+                path,
+                body,
+                accessToken = session.accessToken,
+                cookie = session.refreshCookie.takeIf { includeRefreshCookie },
+            )
         }
         ensureSuccess(result)
         return result
@@ -252,12 +430,24 @@ class AdminApi(
         businessNumber = json.optString("business_number"),
         isActive = json.optBoolean("is_active", true),
         requireApproval = json.optBoolean("require_approval", true),
+        representativeImageUrl = remapLoopback(json.optString("representative_image_url")),
         publicUrl = remapLoopback(json.optString("public_url")),
         qrRedirectUrl = remapLoopback(json.optString("qr_redirect_url")),
         qrUrl = remapLoopback(json.optString("qr_url")),
         qrScanCount = json.optInt("qr_scan_count"),
         qrLastScannedAt = json.optString("qr_last_scanned_at").takeIf { it.isNotBlank() && it != "null" },
+        pendingCount = json.optInt("pending_count"),
         activeMarker = json.optJSONObject("active_marker")?.let(::parseMarker),
+    )
+
+    private fun parseMemory(json: JSONObject): OwnerMemory = OwnerMemory(
+        id = json.optString("id", json.optString("uuid")),
+        storeName = json.optString("store_name"),
+        authorNickname = json.optString("author_nickname", json.optString("visitor_name", "방문자")),
+        content = json.optString("content"),
+        status = json.optString("status").uppercase(),
+        reportCount = json.optInt("report_count"),
+        createdAt = json.optString("created_at"),
     )
 
     private fun parseMarker(json: JSONObject): StoreMarker = StoreMarker(

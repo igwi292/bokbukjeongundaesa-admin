@@ -3,8 +3,10 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-val middleSpaceApiBaseUrl = providers.gradleProperty("MIDDLESPACE_API_BASE_URL")
+val middleSpaceDebugApiBaseUrl = providers.gradleProperty("MIDDLESPACE_API_BASE_URL")
     .orElse("http://10.0.2.2:8000/api")
+val middleSpaceReleaseApiBaseUrl = providers.gradleProperty("MIDDLESPACE_RELEASE_API_BASE_URL")
+    .orElse("https://bokbuk.app/api")
 
 android {
     namespace = "com.example.middlespace.admin"
@@ -16,11 +18,17 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
-        buildConfigField("String", "API_BASE_URL", "\"${middleSpaceApiBaseUrl.get()}\"")
+        manifestPlaceholders["usesCleartextTraffic"] = "false"
     }
 
     buildTypes {
-        release { optimization { enable = false } }
+        debug {
+            buildConfigField("String", "API_BASE_URL", "\"${middleSpaceDebugApiBaseUrl.get()}\"")
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
+        }
+        release {
+            buildConfigField("String", "API_BASE_URL", "\"${middleSpaceReleaseApiBaseUrl.get()}\"")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

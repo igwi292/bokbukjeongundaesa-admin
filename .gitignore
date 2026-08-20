@@ -35,5 +35,6 @@ dist-ssr
 /build/
 local.properties
 app/build/
+gradle/gradle-daemon-jvm.properties
 captures/
 *.iml
